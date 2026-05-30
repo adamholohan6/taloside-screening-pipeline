@@ -1,0 +1,28 @@
+# Output files
+*.csv
+!taloside_descriptors.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Data analysis
+*.xlsx
+*.xls
+*.json
