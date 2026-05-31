@@ -84,9 +84,9 @@ def process_compounds(compounds_dict):
                 "SMILES": smiles,
                 **descriptors
             })
-            logger.info(f"✓ Processed {name}")
+            logger.info(f"[OK] Processed {name}")
         else:
-            logger.warning(f"✗ Could not process {name}. Invalid SMILES string.")
+            logger.warning(f"[X] Could not process {name}. Invalid SMILES string.")
             failed_compounds.append(name)
     
     if failed_compounds:
@@ -151,7 +151,7 @@ Examples:
         output_path = Path(args.output)
         df.to_csv(output_path, index=False)
         
-        logger.info(f"\n✓ SUCCESS! Processed {len(df)} compounds.")
+        logger.info(f"\n[OK] SUCCESS! Processed {len(df)} compounds.")
         logger.info(f"Data saved to: {output_path.absolute()}")
         
         if failed_count > 0:

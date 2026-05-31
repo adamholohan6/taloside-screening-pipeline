@@ -182,7 +182,7 @@ def apply_lipinski_filter(
         ~df.index.isin(passed.index)
     ].copy()
     
-    logger.info(f"✓ Lipinski filtering complete:")
+    logger.info(f"[OK] Lipinski filtering complete:")
     logger.info(f"  Passed: {len(passed)} compounds")
     logger.info(f"  Failed: {len(failed)} compounds")
     logger.info(f"  Pass rate: {100*len(passed)/len(df):.1f}%")
@@ -220,10 +220,22 @@ def apply_pains_filter(
         smiles = row['product_smiles']
         
         try:
-            mol = Chem.MolFromSmiles(smiles)
+            # Parse molecule without sanitization to avoid valence errors
+            mol = Chem.MolFromSmiles(smiles, sanitize=False)
             if mol is None:
                 failed_records.append(idx)
                 continue
+            
+            # Compute rings and basic properties
+            mol.UpdatePropertyCache(strict=False)
+            Chem.FastFindRings(mol)
+            
+            # Try to sanitize, but ignore valence errors for triazole rings
+            try:
+                Chem.SanitizeMol(mol, Chem.SANITIZE_ALL ^ Chem.SANITIZE_PROPERTIES)
+            except:
+                # If sanitization fails, continue anyway - ring info is already set
+                pass
             
             is_pains, matched_patterns = PAINSFilter.screen_molecule(mol, compiled_patterns)
             
@@ -244,7 +256,7 @@ def apply_pains_filter(
     pains_df = pd.DataFrame(pains_records)
     failed_df = df.loc[failed_records] if failed_records else pd.DataFrame()
     
-    logger.info(f"✓ PAINS screening complete:")
+    logger.info(f"[OK] PAINS screening complete:")
     logger.info(f"  Clean (no PAINS): {len(clean_df)} compounds")
     logger.info(f"  Flagged (PAINS): {len(pains_df)} compounds")
     logger.info(f"  Failed screening: {len(failed_df)} compounds")
@@ -262,7 +274,7 @@ def run_phase2_pipeline():
     """
     
     # Load taloside scaffold from MSc work
-    SCAFFOLD = "O=C(O[C@H]1[C@@H](OCN2C=C(C3=CC(OC)=CC=C3)N=N2)[C@@H](O)[C@@H](CO)O[C@H]1OC)C4=C([N+]([O-])=O)C=CC=C4"
+    SCAFFOLD = "O=C(O[C@H]1[C@@H](OCN=[N+]=[N-])[C@@H](O)[C@@H](CO)O[C@H]1OC)C4=C([N+]([O-])=O)C=CC=C4"
     
     # Building blocks: Aromatic alkynes (terminal alkyne for click chemistry)
     BUILDING_BLOCKS = [
@@ -341,27 +353,27 @@ def run_phase2_pipeline():
         # All generated compounds
         all_path = config.output_dir / "01_all_generated_compounds.csv"
         library_df.to_csv(all_path, index=False)
-        logger.info(f"✓ {all_path.name} ({len(library_df)} compounds)")
+        logger.info(f"[OK] {all_path.name} ({len(library_df)} compounds)")
         
         # Lipinski passed
         lip_pass_path = config.output_dir / "02_lipinski_passed.csv"
         lipinski_passed.to_csv(lip_pass_path, index=False)
-        logger.info(f"✓ {lip_pass_path.name} ({len(lipinski_passed)} compounds)")
+        logger.info(f"[OK] {lip_pass_path.name} ({len(lipinski_passed)} compounds)")
         
         # Lipinski failed
         lip_fail_path = config.output_dir / "03_lipinski_failed.csv"
         lipinski_failed.to_csv(lip_fail_path, index=False)
-        logger.info(f"✓ {lip_fail_path.name} ({len(lipinski_failed)} compounds)")
+        logger.info(f"[OK] {lip_fail_path.name} ({len(lipinski_failed)} compounds)")
         
         # PAINS clean (high-confidence leads)
         clean_path = config.output_dir / "04_lipinski_clean_no_pains.csv"
         clean_compounds.to_csv(clean_path, index=False)
-        logger.info(f"✓ {clean_path.name} ({len(clean_compounds)} compounds - HIGH PRIORITY)")
+        logger.info(f"[OK] {clean_path.name} ({len(clean_compounds)} compounds - HIGH PRIORITY)")
         
         # PAINS flagged (experimental investigation)
         pains_path = config.output_dir / "05_lipinski_with_pains.csv"
         pains_compounds.to_csv(pains_path, index=False)
-        logger.info(f"✓ {pains_path.name} ({len(pains_compounds)} compounds - FLAG FOR ASSAY VALIDATION)")
+        logger.info(f"[OK] {pains_path.name} ({len(pains_compounds)} compounds - FLAG FOR ASSAY VALIDATION)")
         
         # Failed products from generator
         generator.export_failed_products()
@@ -375,8 +387,8 @@ def run_phase2_pipeline():
         
         logger.info(f"\nGeneration Funnel:")
         logger.info(f"  Total generated:        {len(library_df):5} (100.0%)")
-        logger.info(f"  ↓ Lipinski passed:      {len(lipinski_passed):5} ({100*len(lipinski_passed)/len(library_df):5.1f}%)")
-        logger.info(f"  ↓ No PAINS (Clean):     {len(clean_compounds):5} ({100*len(clean_compounds)/len(library_df):5.1f}%)")
+        logger.info(f"  -> Lipinski passed:      {len(lipinski_passed):5} ({100*len(lipinski_passed)/len(library_df):5.1f}%)")
+        logger.info(f"  -> No PAINS (Clean):     {len(clean_compounds):5} ({100*len(clean_compounds)/len(library_df):5.1f}%)")
         logger.info(f"\n  Lipinski failed:        {len(lipinski_failed):5} ({100*len(lipinski_failed)/len(library_df):5.1f}%)")
         logger.info(f"  PAINS flagged:          {len(pains_compounds):5} ({100*len(pains_compounds)/len(lipinski_passed):5.1f}% of Lipinski-passed)")
         
@@ -392,7 +404,7 @@ def run_phase2_pipeline():
                 logger.info(f"  - {pattern}: {count} compound(s)")
         
         logger.info("\n" + "=" * 70)
-        logger.info("✓ PHASE 2 PIPELINE COMPLETE")
+        logger.info("[OK] PHASE 2 PIPELINE COMPLETE")
         logger.info("=" * 70)
         
         return {

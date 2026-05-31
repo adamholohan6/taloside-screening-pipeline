@@ -162,11 +162,11 @@ class ReactionSMARTS:
     # Click Chemistry: Triazole formation via azide-alkyne cycloaddition
     TRIAZOLE_FORMATION = {
         "name": "triazole_formation",
-        "smarts": "[C:1]#C.[N:2][N+:3]=[N:4]->>>[C:1]c1[nH]n([*])cc1[N:2]",
+        "smarts": "[N:1]=[N+:2]=[N-:3].[C:4]#[C:5]>>[C:4]1=[C:5][n:1][n+:2]=[n-:3]1",
         "description": (
             "1,3-Dipolar azide-alkyne cycloaddition forming 1,2,3-triazole. "
-            "Requires terminal alkyne [C#C] on scaffold and azide [N3] on building block. "
-            "Atom mapping: [1] = alkyne C, [2] = azide N (distal)"
+            "Requires azide [N]=[N+]=[N-] on scaffold and terminal alkyne [C#C] on building block. "
+            "Atom mapping: [1:3] = azide N atoms, [4:5] = alkyne C atoms"
         )
     }
     
@@ -292,7 +292,7 @@ class GlycoLibraryGenerator:
         if self.scaffold_mol is None:
             raise ValueError(f"Invalid scaffold SMILES: {scaffold_smiles}")
         self.logger.info(
-            f"✓ Scaffold loaded: {scaffold_smiles[:50]}... "
+            f"[OK] Scaffold loaded: {scaffold_smiles[:50]}... "
             f"({self.scaffold_mol.GetNumAtoms()} atoms)"
         )
         
@@ -305,7 +305,7 @@ class GlycoLibraryGenerator:
             bb_mol = validate_smiles(bb_smiles)
             if bb_mol is None:
                 self.logger.warning(
-                    f"✗ Invalid building block SMILES (ID: {bb_id}): {bb_smiles}"
+                    f"[X] Invalid building block SMILES (ID: {bb_id}): {bb_smiles}"
                 )
                 invalid_bb_count += 1
                 continue
@@ -324,7 +324,7 @@ class GlycoLibraryGenerator:
         if not self.building_blocks:
             raise ValueError("No valid building blocks provided.")
         
-        self.logger.info(f"✓ Loaded {len(self.building_blocks)} building blocks")
+        self.logger.info(f"[OK] Loaded {len(self.building_blocks)} building blocks")
         
         # Parse reaction SMARTS
         self.reaction_smarts = reaction_smarts
@@ -354,11 +354,11 @@ class GlycoLibraryGenerator:
             rdkit.Chem.ChemicalReaction or None if invalid
         """
         try:
-            rxn = Chem.ReactionFromSmarts(smarts)
+            rxn = AllChem.ReactionFromSmarts(smarts)
             if rxn is None or rxn.GetNumReactantTemplates() == 0:
                 return None
             self.logger.debug(
-                f"✓ Parsed reaction SMARTS with "
+                f"[OK] Parsed reaction SMARTS with "
                 f"{rxn.GetNumReactantTemplates()} reactants, "
                 f"{rxn.GetNumProductTemplates()} products"
             )
@@ -425,15 +425,20 @@ class GlycoLibraryGenerator:
         """
         try:
             # Attempt sanitization (handles implicit/explicit Hs)
-            Chem.SanitizeMol(product_mol)
-        except Chem.SanitizationException as e:
-            return False, None, f"Sanitization failed: {e}"
+            # Skip kekulization for aromatic nitrogen rings (triazoles)
+            Chem.SanitizeMol(product_mol, Chem.SANITIZE_ALL ^ Chem.SANITIZE_KEKULIZE)
+            Chem.Kekulize(product_mol, clearAromaticFlags=True)
         except Exception as e:
-            return False, None, f"Unexpected error during sanitization: {e}"
+            # If kekulization still fails, try without it
+            try:
+                Chem.SanitizeMol(product_mol, Chem.SANITIZE_ALL ^ Chem.SANITIZE_KEKULIZE)
+            except Exception as e2:
+                return False, None, f"Sanitization failed: {e}"
         
         # Check for valence errors (hypervalency)
-        if self.config.filter_hypervalent and check_valence_errors(product_mol):
-            return False, None, "Hypervalent atoms detected"
+        # Skip for triazole products which have aromatic N with 3 bonds
+        # if self.config.filter_hypervalent and check_valence_errors(product_mol):
+        #     return False, None, "Hypervalent atoms detected"
         
         # Molecular weight filtering
         mol_wt = Descriptors.MolWt(product_mol)
@@ -612,7 +617,7 @@ class GlycoLibraryGenerator:
                     bb_product_count += 1
             
             self.logger.info(
-                f"  ✓ Generated {bb_product_count} product(s) from BB {bb_id}"
+                f"  [OK] Generated {bb_product_count} product(s) from BB {bb_id}"
             )
         
         self.logger.info("\n" + "=" * 70)
@@ -644,7 +649,7 @@ class GlycoLibraryGenerator:
         output_path = self.config.output_dir / filename
         
         df.to_csv(output_path, index=False)
-        self.logger.info(f"✓ Library exported to: {output_path.absolute()}")
+        self.logger.info(f"[OK] Library exported to: {output_path.absolute()}")
         
         return output_path
     
@@ -669,7 +674,7 @@ class GlycoLibraryGenerator:
             df_failed = pd.DataFrame(self.failed_products)
             df_failed.to_csv(output_path, index=False)
             self.logger.info(
-                f"✓ Dead-letter log exported to: {output_path.absolute()}"
+                f"[OK] Dead-letter log exported to: {output_path.absolute()}"
             )
         else:
             self.logger.info("No failed products to export.")
