@@ -1,0 +1,77 @@
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: [OK] Scaffold loaded: O=C(O[C@H]1[C@@H](OCN=[N+]=[N-])[C@@H](O)[C@@H](CO... (28 atoms)
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: [OK] Loaded 20 building blocks
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: INITIATING COMBINATORIAL LIBRARY GENERATION
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: Scaffold: O=C(O[C@H]1[C@@H](OCN=[N+]=[N-])[C@@H](O)[C@@H](CO...
+Building Blocks: 20
+Reaction: [N:1]=[N+:2]=[N-:3].[C:4]#[C:5]>>[C:4]1=[C:5][n:1][n+:2]=[n-...
+
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: 
+[1/20] Processing BB BB-001-Ph...
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-001-Ph
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: 
+[2/20] Processing BB BB-002-4OMe...
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-002-4OMe
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: 
+[3/20] Processing BB BB-003-3OMe...
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-003-3OMe
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: 
+[4/20] Processing BB BB-004-2OMe...
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-004-2OMe
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: 
+[5/20] Processing BB BB-005-4Cl...
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-005-4Cl
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: 
+[6/20] Processing BB BB-006-4F...
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-006-4F
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: 
+[7/20] Processing BB BB-007-4Br...
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-007-4Br
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: 
+[8/20] Processing BB BB-008-3Cl...
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-008-3Cl
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: 
+[9/20] Processing BB BB-009-3Br...
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-009-3Br
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: 
+[10/20] Processing BB BB-010-2Cl...
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-010-2Cl
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: 
+[11/20] Processing BB BB-011-2Pyr...
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-011-2Pyr
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: 
+[12/20] Processing BB BB-012-3Pyr...
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-012-3Pyr
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: 
+[13/20] Processing BB BB-013-4Pyr...
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-013-4Pyr
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: 
+[14/20] Processing BB BB-014-Furan...
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-014-Furan
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: 
+[15/20] Processing BB BB-015-Thioph...
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-015-Thioph
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: 
+[16/20] Processing BB BB-016-35diMe...
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-016-35diMe
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: 
+[17/20] Processing BB BB-017-34diCl...
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-017-34diCl
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: 
+[18/20] Processing BB BB-018-24diMe...
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-018-24diMe
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: 
+[19/20] Processing BB BB-019-Naphth...
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-019-Naphth
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: 
+[20/20] Processing BB BB-020-Styryl...
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-020-Styryl
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: LIBRARY GENERATION COMPLETE
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: Total products: 40
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: Unique products: 40
+[2026-05-31 15:04:55] [INFO    ] GlycoLibraryGenerator: Failed products: 0
+[2026-05-31 15:04:57] [INFO    ] GlycoLibraryGenerator: No failed products to export.

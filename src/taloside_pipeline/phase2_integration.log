@@ -1,0 +1,452 @@
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: PHASE 2: VIRTUAL LIBRARY EXPANSION
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: [OK] Scaffold loaded: O=C(O[C@H]1[C@@H](OCN=[N+]=[N-])[C@@H](O)[C@@H](CO... (28 atoms)
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: [OK] Loaded 8 building blocks
+[2026-05-31 14:19:49] [DEBUG   ] GlycoLibraryGenerator: [OK] Parsed reaction SMARTS with 2 reactants, 1 products
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: INITIATING COMBINATORIAL LIBRARY GENERATION
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: Scaffold: O=C(O[C@H]1[C@@H](OCN=[N+]=[N-])[C@@H](O)[C@@H](CO...
+Building Blocks: 8
+Reaction: [N:1]=[N+:2]=[N-:3].[C:4]#[C:5]>>[C:4]1=[C:5][n:1][n+:2]=[n-...
+
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: 
+[1/8] Processing BB BB-001-Ph...
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-001-Ph
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: 
+[2/8] Processing BB BB-002-4OMe...
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-002-4OMe
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: 
+[3/8] Processing BB BB-003-4Cl...
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-003-4Cl
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: 
+[4/8] Processing BB BB-004-4F...
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-004-4F
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: 
+[5/8] Processing BB BB-005-3Br...
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-005-3Br
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: 
+[6/8] Processing BB BB-006-2NO2...
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-006-2NO2
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: 
+[7/8] Processing BB BB-007-Pyridine...
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-007-Pyridine
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: 
+[8/8] Processing BB BB-008-Furan...
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-008-Furan
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: LIBRARY GENERATION COMPLETE
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: Total products: 16
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: Unique products: 16
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: Failed products: 0
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: PHASE 2b: LIPINSKI FILTERING
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: [OK] Lipinski filtering complete:
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator:   Passed: 16 compounds
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator:   Failed: 0 compounds
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator:   Pass rate: 100.0%
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: PHASE 2c: PAINS SUBSTRUCTURE SCREENING (RDKit Validated)
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: Screening library for PAINS (RDKit FilterCatalog)...
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: [OK] PAINS screening complete:
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator:   Clean (no PAINS): 0 compounds
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator:   Flagged (PAINS): 0 compounds
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator:   Failed screening: 16 compounds
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: EXPORTING RESULTS
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: [OK] 01_all_generated_compounds.csv (16 compounds)
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: [OK] 02_lipinski_passed.csv (16 compounds)
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: [OK] 03_lipinski_failed.csv (0 compounds)
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: [OK] 04_lipinski_clean_no_pains.csv (0 compounds - HIGH PRIORITY)
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: [OK] 05_lipinski_with_pains.csv (0 compounds - FLAG FOR ASSAY VALIDATION)
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: No failed products to export.
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: SUMMARY STATISTICS
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: 
+Generation Funnel:
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator:   Total generated:           16 (100.0%)
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator:   -> Lipinski passed:         16 (100.0%)
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator:   -> No PAINS (Clean):         0 (  0.0%)
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: 
+  Lipinski failed:            0 (  0.0%)
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator:   PAINS flagged:              0 (  0.0% of Lipinski-passed)
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: 
+  No PAINS detected in Lipinski-passed compounds!
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: [OK] PHASE 2 PIPELINE COMPLETE
+[2026-05-31 14:19:49] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: PHASE 2: VIRTUAL LIBRARY EXPANSION
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: [OK] Scaffold loaded: O=C(O[C@H]1[C@@H](OCN=[N+]=[N-])[C@@H](O)[C@@H](CO... (28 atoms)
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: [OK] Loaded 8 building blocks
+[2026-05-31 14:22:17] [DEBUG   ] GlycoLibraryGenerator: [OK] Parsed reaction SMARTS with 2 reactants, 1 products
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: INITIATING COMBINATORIAL LIBRARY GENERATION
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: Scaffold: O=C(O[C@H]1[C@@H](OCN=[N+]=[N-])[C@@H](O)[C@@H](CO...
+Building Blocks: 8
+Reaction: [N:1]=[N+:2]=[N-:3].[C:4]#[C:5]>>[C:4]1=[C:5][n:1][n+:2]=[n-...
+
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: 
+[1/8] Processing BB BB-001-Ph...
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-001-Ph
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: 
+[2/8] Processing BB BB-002-4OMe...
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-002-4OMe
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: 
+[3/8] Processing BB BB-003-4Cl...
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-003-4Cl
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: 
+[4/8] Processing BB BB-004-4F...
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-004-4F
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: 
+[5/8] Processing BB BB-005-3Br...
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-005-3Br
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: 
+[6/8] Processing BB BB-006-2NO2...
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-006-2NO2
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: 
+[7/8] Processing BB BB-007-Pyridine...
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-007-Pyridine
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: 
+[8/8] Processing BB BB-008-Furan...
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-008-Furan
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: LIBRARY GENERATION COMPLETE
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: Total products: 16
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: Unique products: 16
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: Failed products: 0
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: PHASE 2b: LIPINSKI FILTERING
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: [OK] Lipinski filtering complete:
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator:   Passed: 16 compounds
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator:   Failed: 0 compounds
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator:   Pass rate: 100.0%
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: PHASE 2c: PAINS SUBSTRUCTURE SCREENING (RDKit Validated)
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: Screening library for PAINS (RDKit FilterCatalog)...
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:22:17] [WARNING ] GlycoLibraryGenerator: Failed to screen 0: type object 'FilterCatalogParams' has no attribute 'PAINS'
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:22:17] [WARNING ] GlycoLibraryGenerator: Failed to screen 1: type object 'FilterCatalogParams' has no attribute 'PAINS'
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:22:17] [WARNING ] GlycoLibraryGenerator: Failed to screen 2: type object 'FilterCatalogParams' has no attribute 'PAINS'
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:22:17] [WARNING ] GlycoLibraryGenerator: Failed to screen 3: type object 'FilterCatalogParams' has no attribute 'PAINS'
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:22:17] [WARNING ] GlycoLibraryGenerator: Failed to screen 4: type object 'FilterCatalogParams' has no attribute 'PAINS'
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:22:17] [WARNING ] GlycoLibraryGenerator: Failed to screen 5: type object 'FilterCatalogParams' has no attribute 'PAINS'
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:22:17] [WARNING ] GlycoLibraryGenerator: Failed to screen 6: type object 'FilterCatalogParams' has no attribute 'PAINS'
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:22:17] [WARNING ] GlycoLibraryGenerator: Failed to screen 7: type object 'FilterCatalogParams' has no attribute 'PAINS'
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:22:17] [WARNING ] GlycoLibraryGenerator: Failed to screen 8: type object 'FilterCatalogParams' has no attribute 'PAINS'
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:22:17] [WARNING ] GlycoLibraryGenerator: Failed to screen 9: type object 'FilterCatalogParams' has no attribute 'PAINS'
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:22:17] [WARNING ] GlycoLibraryGenerator: Failed to screen 10: type object 'FilterCatalogParams' has no attribute 'PAINS'
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:22:17] [WARNING ] GlycoLibraryGenerator: Failed to screen 11: type object 'FilterCatalogParams' has no attribute 'PAINS'
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:22:17] [WARNING ] GlycoLibraryGenerator: Failed to screen 12: type object 'FilterCatalogParams' has no attribute 'PAINS'
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:22:17] [WARNING ] GlycoLibraryGenerator: Failed to screen 13: type object 'FilterCatalogParams' has no attribute 'PAINS'
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:22:17] [WARNING ] GlycoLibraryGenerator: Failed to screen 14: type object 'FilterCatalogParams' has no attribute 'PAINS'
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:22:17] [WARNING ] GlycoLibraryGenerator: Failed to screen 15: type object 'FilterCatalogParams' has no attribute 'PAINS'
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: [OK] PAINS screening complete:
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator:   Clean (no PAINS): 0 compounds
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator:   Flagged (PAINS): 0 compounds
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator:   Failed screening: 16 compounds
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: EXPORTING RESULTS
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: [OK] 01_all_generated_compounds.csv (16 compounds)
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: [OK] 02_lipinski_passed.csv (16 compounds)
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: [OK] 03_lipinski_failed.csv (0 compounds)
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: [OK] 04_lipinski_clean_no_pains.csv (0 compounds - HIGH PRIORITY)
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: [OK] 05_lipinski_with_pains.csv (0 compounds - FLAG FOR ASSAY VALIDATION)
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: No failed products to export.
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: SUMMARY STATISTICS
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: 
+Generation Funnel:
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator:   Total generated:           16 (100.0%)
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator:   -> Lipinski passed:         16 (100.0%)
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator:   -> No PAINS (Clean):         0 (  0.0%)
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: 
+  Lipinski failed:            0 (  0.0%)
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator:   PAINS flagged:              0 (  0.0% of Lipinski-passed)
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: 
+  No PAINS detected in Lipinski-passed compounds!
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: [OK] PHASE 2 PIPELINE COMPLETE
+[2026-05-31 14:22:17] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: PHASE 2: VIRTUAL LIBRARY EXPANSION
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: [OK] Scaffold loaded: O=C(O[C@H]1[C@@H](OCN=[N+]=[N-])[C@@H](O)[C@@H](CO... (28 atoms)
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: [OK] Loaded 8 building blocks
+[2026-05-31 14:25:05] [DEBUG   ] GlycoLibraryGenerator: [OK] Parsed reaction SMARTS with 2 reactants, 1 products
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: INITIATING COMBINATORIAL LIBRARY GENERATION
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: Scaffold: O=C(O[C@H]1[C@@H](OCN=[N+]=[N-])[C@@H](O)[C@@H](CO...
+Building Blocks: 8
+Reaction: [N:1]=[N+:2]=[N-:3].[C:4]#[C:5]>>[C:4]1=[C:5][n:1][n+:2]=[n-...
+
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: 
+[1/8] Processing BB BB-001-Ph...
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-001-Ph
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: 
+[2/8] Processing BB BB-002-4OMe...
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-002-4OMe
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: 
+[3/8] Processing BB BB-003-4Cl...
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-003-4Cl
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: 
+[4/8] Processing BB BB-004-4F...
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-004-4F
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: 
+[5/8] Processing BB BB-005-3Br...
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-005-3Br
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: 
+[6/8] Processing BB BB-006-2NO2...
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-006-2NO2
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: 
+[7/8] Processing BB BB-007-Pyridine...
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-007-Pyridine
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: 
+[8/8] Processing BB BB-008-Furan...
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-008-Furan
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: LIBRARY GENERATION COMPLETE
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: Total products: 16
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: Unique products: 16
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: Failed products: 0
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: PHASE 2b: LIPINSKI FILTERING
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: [OK] Lipinski filtering complete:
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator:   Passed: 16 compounds
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator:   Failed: 0 compounds
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator:   Pass rate: 100.0%
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: PHASE 2c: PAINS SUBSTRUCTURE SCREENING (RDKit Validated)
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: Screening library for PAINS (RDKit FilterCatalog)...
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:25:05] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:25:05] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:25:05] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:25:05] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:25:05] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:25:05] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:25:05] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:25:05] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:25:05] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:25:05] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:25:05] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:25:05] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:25:05] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:25:05] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:25:05] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:25:05] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: [OK] PAINS screening complete:
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator:   Clean (no PAINS): 16 compounds
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator:   Flagged (PAINS): 0 compounds
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator:   Failed screening: 0 compounds
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: EXPORTING RESULTS
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: [OK] 01_all_generated_compounds.csv (16 compounds)
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: [OK] 02_lipinski_passed.csv (16 compounds)
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: [OK] 03_lipinski_failed.csv (0 compounds)
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: [OK] 04_lipinski_clean_no_pains.csv (16 compounds - HIGH PRIORITY)
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: [OK] 05_lipinski_with_pains.csv (0 compounds - FLAG FOR ASSAY VALIDATION)
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: No failed products to export.
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: SUMMARY STATISTICS
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: 
+Generation Funnel:
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator:   Total generated:           16 (100.0%)
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator:   -> Lipinski passed:         16 (100.0%)
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator:   -> No PAINS (Clean):        16 (100.0%)
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: 
+  Lipinski failed:            0 (  0.0%)
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator:   PAINS flagged:              0 (  0.0% of Lipinski-passed)
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: 
+  No PAINS detected in Lipinski-passed compounds!
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: [OK] PHASE 2 PIPELINE COMPLETE
+[2026-05-31 14:25:05] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: PHASE 2: VIRTUAL LIBRARY EXPANSION
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: [OK] Scaffold loaded: O=C(O[C@H]1[C@@H](OCN=[N+]=[N-])[C@@H](O)[C@@H](CO... (28 atoms)
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: [OK] Loaded 8 building blocks
+[2026-05-31 14:43:13] [DEBUG   ] GlycoLibraryGenerator: [OK] Parsed reaction SMARTS with 2 reactants, 1 products
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: INITIATING COMBINATORIAL LIBRARY GENERATION
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: Scaffold: O=C(O[C@H]1[C@@H](OCN=[N+]=[N-])[C@@H](O)[C@@H](CO...
+Building Blocks: 8
+Reaction: [N:1]=[N+:2]=[N-:3].[C:4]#[C:5]>>[C:4]1=[C:5][n:1][n+:2]=[n-...
+
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: 
+[1/8] Processing BB BB-001-Ph...
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-001-Ph
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: 
+[2/8] Processing BB BB-002-4OMe...
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-002-4OMe
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: 
+[3/8] Processing BB BB-003-4Cl...
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-003-4Cl
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: 
+[4/8] Processing BB BB-004-4F...
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-004-4F
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: 
+[5/8] Processing BB BB-005-3Br...
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-005-3Br
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: 
+[6/8] Processing BB BB-006-2NO2...
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-006-2NO2
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: 
+[7/8] Processing BB BB-007-Pyridine...
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-007-Pyridine
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: 
+[8/8] Processing BB BB-008-Furan...
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator:   [OK] Generated 2 product(s) from BB BB-008-Furan
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: LIBRARY GENERATION COMPLETE
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: Total products: 16
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: Unique products: 16
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: Failed products: 0
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: PHASE 2b: LIPINSKI FILTERING
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: [OK] Lipinski filtering complete:
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator:   Passed: 16 compounds
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator:   Failed: 0 compounds
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator:   Pass rate: 100.0%
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: PHASE 2c: PAINS SUBSTRUCTURE SCREENING (RDKit Validated)
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: Screening library for PAINS (RDKit FilterCatalog)...
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:43:13] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:43:13] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:43:13] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:43:13] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:43:13] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:43:13] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:43:13] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:43:13] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:43:13] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:43:13] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:43:13] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:43:13] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:43:13] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:43:13] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:43:13] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: Initializing RDKit PAINS catalog...
+[2026-05-31 14:43:13] [WARNING ] GlycoLibraryGenerator: Could not load PAINS catalog: No PAINS constant found
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: [OK] PAINS screening complete:
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator:   Clean (no PAINS): 16 compounds
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator:   Flagged (PAINS): 0 compounds
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator:   Failed screening: 0 compounds
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: EXPORTING RESULTS
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: [OK] 01_all_generated_compounds.csv (16 compounds)
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: [OK] 02_lipinski_passed.csv (16 compounds)
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: [OK] 03_lipinski_failed.csv (0 compounds)
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: [OK] 04_lipinski_clean_no_pains.csv (16 compounds - HIGH PRIORITY)
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: [OK] 05_lipinski_with_pains.csv (0 compounds - FLAG FOR ASSAY VALIDATION)
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: No failed products to export.
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: SUMMARY STATISTICS
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: ======================================================================
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: 
+Generation Funnel:
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator:   Total generated:           16 (100.0%)
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator:   -> Lipinski passed:         16 (100.0%)
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator:   -> No PAINS (Clean):        16 (100.0%)
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: 
+  Lipinski failed:            0 (  0.0%)
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator:   PAINS flagged:              0 (  0.0% of Lipinski-passed)
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: 
+  No PAINS detected in Lipinski-passed compounds!
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: 
+======================================================================
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: [OK] PHASE 2 PIPELINE COMPLETE
+[2026-05-31 14:43:13] [INFO    ] GlycoLibraryGenerator: ======================================================================

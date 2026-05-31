@@ -1,0 +1,9 @@
+-r requirements.txt
+pytest>=7.0.0
+pytest-cov>=3.0.0
+pytest-xdist>=2.5.0
+black>=22.0.0
+flake8>=4.0.0
+mypy>=0.910
+isort>=5.10.0
+pyyaml>=6.0
