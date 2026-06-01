@@ -1,0 +1,43 @@
+[33mcommit 6db709101da4d86b05d0ebe8d191f94c1b63cb6c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m
+Author: Adam <adamholohan6@gmail.com>
+Date:   Sun May 31 21:08:17 2026 +0100
+
+    ChemRxiv reproducibility and validation updates
+
+.gitignore
+CONTRIBUTING.md
+LICENSE
+README.md
+audit_report.md
+coverage_report.md
+data/input/taloside_descriptors.csv
+final_validation_report.md
+notebook_alignment_report.md
+notebook_execution_summary.md
+notebooks/Phase2_VirtualLibraryExpansion.ipynb
+phase2_output/descriptor_distributions.png
+phase2_output/lead_score_landscape.png
+phase2_output/lipinski_breakdown.png
+pytest.ini
+requirements-dev.txt
+requirements.txt
+setup.py
+src/__init__.py
+src/taloside_pipeline/__init__.py
+src/taloside_pipeline/building_block_analysis.png
+src/taloside_pipeline/descriptor_calculator.py
+src/taloside_pipeline/descriptor_distributions.png
+src/taloside_pipeline/glycolibrary_generator.py
+src/taloside_pipeline/lead_compound_analysis.png
+src/taloside_pipeline/library_generator.py
+src/taloside_pipeline/lipinski_breakdown.png
+src/taloside_pipeline/original_vs_generated_comparison.png
+src/taloside_pipeline/phase2_integration.py
+tests/__init__.py
+tests/conftest.py
+tests/constants.py
+tests/test_descriptor_calculator.py
+tests/test_library_generator.py
+tests/test_phase2_integration.py
+tests/test_smarts_validation.py
+tests/test_smoke.py
