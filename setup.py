@@ -27,6 +27,7 @@ setup(
         "console_scripts": [
             "taloside-descriptors=taloside_pipeline.descriptor_calculator:main",
             "taloside-phase2=taloside_pipeline.phase2_integration:run_phase2_pipeline",
+            "taloside-phase3=taloside_pipeline.phase3_docking:run_phase3_pipeline",
         ],
     },
     python_requires=">=3.8",

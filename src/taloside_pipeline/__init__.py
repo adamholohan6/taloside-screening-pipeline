@@ -22,6 +22,7 @@ from .glycolibrary_generator import (
     generate_triazole_library,
 )
 from .phase2_integration import run_phase2_pipeline
+from .phase3_docking import DockingConfig, VinaDocking, run_phase3_pipeline
 
 # Backwards-compatible alias retained for older scripts.
 Phase2Integration = run_phase2_pipeline
@@ -41,4 +42,7 @@ __all__ = [
     "generate_triazole_library",
     "run_phase2_pipeline",
     "Phase2Integration",
+    "DockingConfig",
+    "VinaDocking",
+    "run_phase3_pipeline",
 ]

@@ -51,3 +51,7 @@ PHASE2_EXPORT_FILES = [
     "06_pains_undetermined.csv",
     "07_lead_scored.csv",
 ]
+
+PHASE3_EXPORT_FILES = [
+    "08_docking_results.csv",
+]
