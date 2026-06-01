@@ -86,6 +86,25 @@ class PAINSFilter:
     _catalog_loaded: bool = False
 
     @classmethod
+    def reset(cls) -> None:
+        """
+        CRITICAL FIX: Reset module-level state for test isolation.
+        
+        Call this in test setUp() and tearDown() to avoid test pollution
+        from stateful _catalog and _catalog_loaded variables.
+        
+        Example:
+            def setUp(self):
+                PAINSFilter.reset()
+            
+            def tearDown(self):
+                PAINSFilter.reset()
+        """
+        cls._catalog = None
+        cls._catalog_loaded = False
+        logger.debug("PAINSFilter state reset")
+
+    @classmethod
     def _get_catalog(cls) -> Optional[FilterCatalog.FilterCatalog]:
         if cls._catalog_loaded:
             return cls._catalog
@@ -200,7 +219,9 @@ def apply_pains_filter(
     df: pd.DataFrame
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
-    Screen compounds for PAINS substructures.
+    Screen compounds for PAINS substructures with ROBUST empty DataFrame handling.
+
+    CRITICAL FIX: Check for empty input DataFrame and preserve schema in output.
 
     Returns three DataFrames:
       clean_df       — no PAINS alerts
@@ -210,6 +231,10 @@ def apply_pains_filter(
     The 'undetermined' category corrects the original fallback which silently
     passed all compounds when the catalog failed to load.
     """
+    if df.empty:
+        logger.warning("apply_pains_filter() received empty DataFrame")
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+
     clean_records        = []
     pains_records        = []
     undetermined_records = []
@@ -268,9 +293,23 @@ def apply_pains_filter(
             row_copy['pains_patterns'] = ''
             undetermined_records.append(row_copy)
 
-    clean_df        = pd.DataFrame(clean_records)
-    pains_df        = pd.DataFrame(pains_records)
-    undetermined_df = pd.DataFrame(undetermined_records)
+    # CRITICAL FIX: Check if lists are non-empty before creating DataFrames
+    # This prevents crashes from empty pd.concat operations
+    if clean_records:
+        clean_df = pd.DataFrame(clean_records)
+    else:
+        # Preserve schema even when empty
+        clean_df = pd.DataFrame(columns=list(df.columns) + ['pains_flag', 'pains_status', 'pains_patterns'])
+
+    if pains_records:
+        pains_df = pd.DataFrame(pains_records)
+    else:
+        pains_df = pd.DataFrame(columns=list(df.columns) + ['pains_flag', 'pains_status', 'pains_patterns'])
+
+    if undetermined_records:
+        undetermined_df = pd.DataFrame(undetermined_records)
+    else:
+        undetermined_df = pd.DataFrame(columns=list(df.columns) + ['pains_flag', 'pains_status', 'pains_patterns'])
 
     logger.info(f"[OK] PAINS screening complete:")
     logger.info(f"  Clean (no PAINS):  {len(clean_df)}")
@@ -442,7 +481,7 @@ def run_phase2_pipeline():
         df_export.to_csv(path, index=False)
         logger.info(f"[OK] {fname} ({len(df_export)} compounds)")
 
-    # ── Summary ───────────────────────────────────────────────────────────
+    # ── Summary ──────────────────────────────────────────────────────────
     logger.info("\n" + "=" * 70)
     logger.info("SUMMARY STATISTICS")
     logger.info("=" * 70)
