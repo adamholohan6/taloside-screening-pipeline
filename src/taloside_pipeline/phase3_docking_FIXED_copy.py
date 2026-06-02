@@ -20,6 +20,7 @@ from __future__ import annotations
 import logging
 import re
 import subprocess
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
@@ -27,7 +28,7 @@ from typing import Dict, List, Optional, Set, Tuple
 import numpy as np
 import pandas as pd
 from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolAlign
+from rdkit.Chem import AllChem, rdMolAlign, rdMolDescriptors
 
 try:
     from .library_generator import configure_logging
@@ -70,6 +71,8 @@ LACTOSE_SMILES = (
 LIGAND_RESNAMES = frozenset(
     {"LAC", "LCT", "BGC", "GAL", "GLC", "LNT", "NAG", "BMA", "FUL"}
 )
+CRYSTAL_LIGAND_RESNAMES = frozenset({"BGC", "GAL"})
+FORBIDDEN_RECEPTOR_RESNAMES = frozenset({"BGC", "GAL", "HOH"})
 
 _VINA_AFFINITY_RE = re.compile(
     r"^\s*1\s+(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)",
@@ -110,65 +113,152 @@ def minmax_normalize(series: pd.Series, higher_is_better: bool = True) -> pd.Ser
     return norm
 
 
-def mol_to_pdbqt_string(mol: Chem.Mol, conf_id: int = 0, name: str = "LIG") -> str:
-    """Generate a Vina/AD4-compatible ligand PDBQT string.
+def _pdb_resname(line: str) -> str:
+    return line[17:20].strip() if len(line) >= 20 else ""
 
-    We emit ATOM records ending with the atom Type token placed in columns 77-78.
-    """
 
-    def get_ad_type(atom: Chem.Atom) -> Optional[str]:
-        sym = atom.GetSymbol()
-        if sym == "H":
-            return None
-        if sym == "C":
-            return "C"
-        if sym == "N":
-            return "NA"
-        if sym == "O":
-            return "OA"
-        if sym in {"S", "P"}:
-            return sym
-        if sym in {"F", "Cl", "Br", "I"}:
-            return sym
-        return "C"
+def residue_counts(pdbqt_path: Path, resnames: Set[str]) -> Dict[str, int]:
+    counts = {res: 0 for res in resnames}
+    for line in Path(pdbqt_path).read_text(encoding="utf-8", errors="replace").splitlines():
+        if line.startswith(("ATOM", "HETATM")):
+            resname = _pdb_resname(line)
+            if resname in counts:
+                counts[resname] += 1
+    return counts
 
+
+def assert_clean_receptor_pdbqt(receptor_pdbqt: Path) -> None:
+    """Fail if receptor PDBQT still contains crystal ligand or bulk waters."""
+    counts = residue_counts(Path(receptor_pdbqt), set(FORBIDDEN_RECEPTOR_RESNAMES))
+    present = {res: count for res, count in counts.items() if count}
+    if present:
+        details = ", ".join(f"{res}={count}" for res, count in sorted(present.items()))
+        raise AssertionError(
+            f"Receptor PDBQT is contaminated with forbidden residues: {details}. "
+            "Regenerate a clean apo receptor before docking."
+        )
+
+
+def write_clean_receptor_pdbqt(source_pdbqt: Path, output_pdbqt: Path) -> Path:
+    """Create an apo receptor PDBQT by removing crystal ligand residues and waters."""
+    source_pdbqt = Path(source_pdbqt)
+    output_pdbqt = Path(output_pdbqt)
+    kept: List[str] = []
+    removed = {res: 0 for res in FORBIDDEN_RECEPTOR_RESNAMES}
+
+    for line in source_pdbqt.read_text(encoding="utf-8", errors="replace").splitlines():
+        if line.startswith(("ATOM", "HETATM")):
+            resname = _pdb_resname(line)
+            if resname in removed:
+                removed[resname] += 1
+                continue
+        kept.append(line)
+
+    output_pdbqt.write_text("\n".join(kept).rstrip() + "\n", encoding="utf-8")
+    assert_clean_receptor_pdbqt(output_pdbqt)
+    return output_pdbqt
+
+
+def _parse_pdbqt_charge(line: str) -> Optional[float]:
+    parts = line.split()
+    if len(parts) < 2:
+        return None
+    try:
+        return float(parts[-2])
+    except ValueError:
+        return None
+
+
+def _parse_torsdof(pdbqt_text: str) -> Optional[int]:
+    for line in pdbqt_text.splitlines():
+        if line.startswith("TORSDOF"):
+            parts = line.split()
+            if len(parts) >= 2:
+                return int(parts[1])
+    return None
+
+
+def validate_ligand_pdbqt(pdbqt_path: Path, expected_rotatable_bonds: Optional[int] = None) -> None:
+    """Validate that a ligand PDBQT has charges and plausible torsion metadata."""
+    text = Path(pdbqt_path).read_text(encoding="utf-8", errors="replace")
+    atom_lines = [line for line in text.splitlines() if line.startswith(("ATOM", "HETATM"))]
+    if not atom_lines:
+        raise ValueError(f"Ligand PDBQT has no atoms: {pdbqt_path}")
+
+    charges = [charge for line in atom_lines for charge in [_parse_pdbqt_charge(line)] if charge is not None]
+    if not charges:
+        raise ValueError(f"Ligand PDBQT has no parseable charges: {pdbqt_path}")
+    if all(abs(charge) < 1e-4 for charge in charges):
+        raise ValueError(f"Ligand PDBQT has all-zero charges: {pdbqt_path}")
+
+    torsdof = _parse_torsdof(text)
+    if torsdof is None:
+        raise ValueError(f"Ligand PDBQT is missing TORSDOF: {pdbqt_path}")
+    if expected_rotatable_bonds and expected_rotatable_bonds > 0:
+        if torsdof <= 0:
+            raise ValueError(
+                f"Ligand PDBQT has TORSDOF {torsdof} but RDKit expects "
+                f"{expected_rotatable_bonds} rotatable bonds: {pdbqt_path}"
+            )
+        if "BRANCH" not in text:
+            raise ValueError(f"Flexible ligand PDBQT lacks BRANCH records: {pdbqt_path}")
+
+
+def mol_to_pdbqt_file_openbabel(
+    mol: Chem.Mol,
+    output_pdbqt: Path,
+    *,
+    conf_id: int = 0,
+    name: str = "LIG",
+    obabel_executable: str = "obabel",
+) -> Path:
+    """Generate a ligand PDBQT with Open Babel Gasteiger charges and torsions."""
     mol = Chem.Mol(mol)
     if mol.GetNumConformers() == 0:
         raise ValueError("Molecule has no conformer for PDBQT export")
+    mol.SetProp("_Name", name)
 
-    conf = mol.GetConformer(conf_id)
+    output_pdbqt = Path(output_pdbqt)
+    output_pdbqt.parent.mkdir(parents=True, exist_ok=True)
+    expected_rotors = rdMolDescriptors.CalcNumRotatableBonds(Chem.RemoveHs(mol))
 
-    # ADDED "ROOT\n" HERE
-    lines: List[str] = [f"REMARK  Name = {name}\n", "ROOT\n"]
-    serial = 0
+    with tempfile.TemporaryDirectory() as tmp:
+        sdf_path = Path(tmp) / f"{name}.sdf"
+        writer = Chem.SDWriter(str(sdf_path))
+        writer.write(mol, confId=conf_id)
+        writer.close()
 
-    res_name = "LIG"
-    chain_id = "A"
-    res_seq = 1
+        cmd = [
+            obabel_executable,
+            str(sdf_path),
+            "-O",
+            str(output_pdbqt),
+            "-p",
+            "7.4",
+            "--partialcharge",
+            "gasteiger",
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        if result.returncode != 0:
+            raise RuntimeError(
+                "Open Babel ligand PDBQT conversion failed.\n"
+                f"Command: {' '.join(cmd)}\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
+            )
 
-    for atom in mol.GetAtoms():
-        ad_type = get_ad_type(atom)
-        if ad_type is None:
-            continue
+    validate_ligand_pdbqt(output_pdbqt, expected_rotatable_bonds=expected_rotors)
+    return output_pdbqt
 
-        serial += 1
-        pos = conf.GetAtomPosition(atom.GetIdx())
 
-        atom_name = atom.GetSymbol().upper().ljust(4)[:4]
-
-        # Build the fixed-width ATOM line and force the atom type into columns 77-78
-        atom_line = (
-            f"ATOM  {serial:5d} {atom_name:>4s} {res_name:<3s} {chain_id}{res_seq:4d}    "
-            f"{pos.x:8.3f}{pos.y:8.3f}{pos.z:8.3f}  1.00  0.00"
+def mol_to_pdbqt_string(mol: Chem.Mol, conf_id: int = 0, name: str = "LIG") -> str:
+    """Generate a ligand PDBQT string using Open Babel, not the old manual writer."""
+    with tempfile.TemporaryDirectory() as tmp:
+        out = mol_to_pdbqt_file_openbabel(
+            mol,
+            Path(tmp) / f"{name}.pdbqt",
+            conf_id=conf_id,
+            name=name,
         )
-        # pad to 76 chars so the next two chars occupy columns 77-78
-        atom_line = atom_line.ljust(76) + f"{ad_type:>2s}\n"
-        lines.append(atom_line)
-
-    # ADDED "ENDROOT\n" HERE
-    lines.append("ENDROOT\n")
-    lines.append("TORSDOF 0\n")
-    return "".join(lines)
+        return out.read_text(encoding="utf-8", errors="replace")
 
 def embed_ligand_3d(mol: Chem.Mol, random_seed: int = 42) -> Tuple[Optional[Chem.Mol], str]:
     """Embed and MMFF-optimise a 3D conformer."""
@@ -432,14 +522,18 @@ class VinaDocking:
                 continue
 
             try:
-                # Always use manual PDBQT writer (Meeko disabled)
-                pdbqt_text = mol_to_pdbqt_string(embedded, conf_id=0, name=compound_id)
                 lig_path = lig_dir / f"{compound_id}.pdbqt"
-                lig_path.write_text(pdbqt_text, encoding="utf-8")
+                mol_to_pdbqt_file_openbabel(
+                    embedded,
+                    lig_path,
+                    conf_id=0,
+                    name=compound_id,
+                )
 
                 statuses.append("success")
                 pdbqt_paths.append(str(lig_path))
-            except Exception:
+            except Exception as exc:
+                self.logger.warning(f"[prep] PDBQT failed for {compound_id}: {exc}")
                 statuses.append("prep_failed")
                 pdbqt_paths.append(None)
 
@@ -479,6 +573,7 @@ class VinaDocking:
             raise FileNotFoundError(
                 f"Receptor PDBQT not found: {self.config.receptor_pdbqt}. Prepare 3ZSJ receptor before docking."
             )
+        assert_clean_receptor_pdbqt(self.config.receptor_pdbqt)
 
         out = prepared_df.copy()
         vina_scores: List[Optional[float]] = []
@@ -494,6 +589,21 @@ class VinaDocking:
                 continue
 
             lig_path = Path(row["ligand_pdbqt"])
+            try:
+                smiles_col = "product_smiles" if "product_smiles" in row.index else "smiles"
+                expected_rotors = None
+                if smiles_col in row.index and pd.notna(row[smiles_col]):
+                    source_mol = Chem.MolFromSmiles(str(row[smiles_col]))
+                    if source_mol is not None:
+                        expected_rotors = rdMolDescriptors.CalcNumRotatableBonds(source_mol)
+                validate_ligand_pdbqt(lig_path, expected_rotatable_bonds=expected_rotors)
+            except Exception as exc:
+                self.logger.warning(f"[dock] Invalid ligand PDBQT for {compound_id}: {exc}")
+                vina_scores.append(None)
+                dock_statuses.append("dock_failed")
+                pose_paths.append(None)
+                continue
+
             pose_path = self.config.output_dir / "poses" / f"{compound_id}_out.pdbqt"
 
             cmd = self._build_vina_command(lig_path, pose_path)
