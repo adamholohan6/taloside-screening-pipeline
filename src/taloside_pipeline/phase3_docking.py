@@ -274,24 +274,26 @@ def mol_to_pdbqt_string(mol: Chem.Mol, conf_id: int = 0, name: str = "LIG") -> s
 def embed_ligand_3d(mol: Chem.Mol, random_seed: int = 42) -> Tuple[Optional[Chem.Mol], str]:
     """
     Embed and MMFF-optimise a 3D conformer.
-
-    Returns (mol_with_conf, status) where status is 'success' or 'prep_failed'.
+    Safely catches internal RDKit C++ exceptions to prevent full pipeline failure.
     """
-    work = Chem.Mol(mol)
-    work = Chem.AddHs(work)
-    params = AllChem.ETKDGv3()
-    params.randomSeed = random_seed
-    params.useSmallRingTorsions = True
-    code = AllChem.EmbedMolecule(work, params)
-    if code != 0:
-        code = AllChem.EmbedMolecule(work, randomSeed=random_seed)
-    if code != 0:
-        return None, "prep_failed"
     try:
-        AllChem.MMFFOptimizeMolecule(work, maxIters=500)
+        work = Chem.Mol(mol)
+        work = Chem.AddHs(work)
+        params = AllChem.ETKDGv3()
+        params.randomSeed = random_seed
+        params.useSmallRingTorsions = True
+        code = AllChem.EmbedMolecule(work, params)
+        if code != 0:
+            code = AllChem.EmbedMolecule(work, randomSeed=random_seed)
+        if code != 0:
+            return None, "prep_failed"
+        try:
+            AllChem.MMFFOptimizeMolecule(work, maxIters=500)
+        except Exception:
+            pass
+        return work, "success"
     except Exception:
-        pass
-    return work, "success"
+        return None, "prep_failed"
 
 
 def parse_vina_affinity(stdout: str, stderr: str = "") -> Optional[float]:
@@ -455,9 +457,7 @@ class VinaDocking:
     def prepare_ligands(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Generate 3D conformers from SMILES; tag failed rows as ``prep_failed``.
-
-        Reads ``product_smiles`` (or ``smiles``) per row; writes ligand PDBQT files
-        under ``phase3_output/ligands/``.
+        Robustly heals triazole nitrogen explicit valence errors using a two-pass sanitization mask.
         """
         out = df.copy()
         smiles_col = "product_smiles" if "product_smiles" in out.columns else "smiles"
@@ -467,14 +467,59 @@ class VinaDocking:
         statuses: List[str] = []
         pdbqt_paths: List[Optional[str]] = []
 
+        lig_dir = self.config.output_dir / "ligands"
+        lig_dir.mkdir(parents=True, exist_ok=True)
+
         for _, row in out.iterrows():
             compound_id = str(row.get("compound_id", "unknown"))
             smiles = row[smiles_col]
+            
+            # 1. Attempt standard parsing
             mol = Chem.MolFromSmiles(smiles)
+            print("\n========================")
+            print("COMPOUND:", compound_id)
+            print("SMILES:", smiles)
+            print("========================")
+            # 2. Advanced Fallback: Two-pass sanitization mask for SMARTS triazole products
+            if mol is None:
+                
+                try:
+                    mol = Chem.MolFromSmiles(smiles, sanitize=False)
+                    if mol is not None:
+
+                       print("\nATOM TABLE")
+                    for atom in mol.GetAtoms():
+                        print(
+                            atom.GetIdx(),
+                            atom.GetSymbol(),
+                            "charge=", atom.GetFormalCharge(),
+                            "degree=", atom.GetDegree(),
+                            "aromatic=", atom.GetIsAromatic()
+                        )
+                        
+    
+                        # Pass 1: Run all sanitization steps EXCEPT strict property/valence validation
+                        # This allows the engine to perceive ring systems and aromaticity first.
+                        mask = Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_PROPERTIES
+                        Chem.SanitizeMol(mol, sanitizeOps=mask)
+                        
+                        # Graph repair: strip hypervalent explicit Hs from neutral ring nitrogens
+                        for atom in mol.GetAtoms():
+                            if atom.GetAtomicNum() == 7:  # Nitrogen
+                                if atom.GetExplicitValence() > 3 and atom.GetFormalCharge() == 0:
+                                    if atom.GetNumExplicitHs() > 0:
+                                        atom.SetNumExplicitHs(0)
+                        
+                        # Pass 2: Re-verify properties strictly now that graph anomalies are resolved
+                        mol.UpdatePropertyCache(strict=True)
+                        Chem.SanitizeMol(mol)
+                except Exception:
+                    mol = None
+
             if mol is None:
                 statuses.append("prep_failed")
                 pdbqt_paths.append(None)
-                self.logger.warning(f"[prep] Invalid SMILES for {compound_id}")
+                self.logger.warning(f"[prep] Invalid SMILES structure for {compound_id}")
                 continue
 
             std = standardize_mol(mol)
@@ -490,7 +535,7 @@ class VinaDocking:
 
             try:
                 pdbqt_text = mol_to_pdbqt_string(embedded, conf_id=0, name=compound_id)
-                lig_path = self.config.output_dir / "ligands" / f"{compound_id}.pdbqt"
+                lig_path = lig_dir / f"{compound_id}.pdbqt"
                 lig_path.write_text(pdbqt_text, encoding="utf-8")
                 statuses.append("success")
                 pdbqt_paths.append(str(lig_path))
@@ -534,9 +579,8 @@ class VinaDocking:
             "--num_modes",
             str(self.config.n_poses),
             "--out",
-            str(output_pdbqt),
-            "--log",
-            str(log_path),
+            str(output_pdbqt)
+            # "--log" and "log_path" have been removed here to fix the v1.2.7 parse error
         ]
 
     def run_docking(self, prepared_df: pd.DataFrame) -> pd.DataFrame:
@@ -710,17 +754,37 @@ class VinaDocking:
 
         lig_dir = self.config.output_dir / "validation"
         lig_dir.mkdir(parents=True, exist_ok=True)
+        # --- REPLACEMENT BLOCK ---
+        # We use OpenBabel to generate the PDBQT to ensure correct atom types (OA, OS, etc.)
+        lig_dir = self.config.output_dir / "validation"
+        lig_dir.mkdir(parents=True, exist_ok=True)
+        lactose_sdf = lig_dir / "lactose_temp.sdf"
         lactose_pdbqt = lig_dir / "lactose_redock.pdbqt"
-        lactose_pdbqt.write_text(
-            mol_to_pdbqt_string(embedded, conf_id=0, name="LACTOSE"),
-            encoding="utf-8",
-        )
+
+        # Export the RDKit molecule to an SDF first
+        writer = Chem.SDWriter(str(lactose_sdf))
+        writer.write(embedded)
+        writer.close()
+
+        # Use OpenBabel to convert to a valid PDBQT
+        # NOTE: If this fails, replace "obabel" with the full path to your executable
+        # e.g., r"C:\Program Files\OpenBabel-3.1.1\obabel.exe"
+        try:
+            subprocess.run([
+                "obabel", str(lactose_sdf), 
+                "-O", str(lactose_pdbqt), 
+                "-p", "7.4", 
+                "--partialcharge", "gasteiger"
+            ], check=True, capture_output=True)
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            raise RuntimeError(f"OpenBabel conversion failed. Make sure 'obabel' is installed and in your PATH. Error: {e}")
         pose_out = lig_dir / "lactose_redock_out.pdbqt"
         log_out = lig_dir / "lactose_redock.log"
 
         cmd = self._build_vina_command(lactose_pdbqt, pose_out, log_out)
         self.logger.info("[validate] Redocking lactose for receptor validation")
 
+        # --- REPLACEMENT BLOCK ---
         try:
             result = subprocess.run(
                 cmd,
@@ -729,6 +793,21 @@ class VinaDocking:
                 check=False,
                 timeout=600,
             )
+            
+            if result.returncode != 0:
+                print("\n" + "="*50)
+                print("VINA DOCKING FAILED")
+                print("Command executed:", " ".join(cmd))
+                print("--- STDOUT (Messages) ---")
+                print(result.stdout)
+                print("--- STDERR (THE ERROR) ---")
+                print(result.stderr)
+                print("="*50 + "\n")
+                
+        except FileNotFoundError as exc:
+            raise AssertionError(
+                f"Vina not available for receptor validation: {exc}"
+            ) from exc
         except FileNotFoundError as exc:
             raise AssertionError(
                 f"Vina not available for receptor validation: {exc}"
@@ -842,5 +921,7 @@ if __name__ == "__main__":
     cfg = DockingConfig(
         receptor_pdb=Path("data/docking/3ZSJ.pdb"),
         receptor_pdbqt=Path("data/docking/3ZSJ.pdbqt"),
+        # ADD THIS LINE BELOW (use your actual path, note the 'r' before the quotes)
+        vina_executable=r"C:\Users\adamh\Docking - Copy\vina.exe"
     )
     run_phase3_pipeline(cfg)

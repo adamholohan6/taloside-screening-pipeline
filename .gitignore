@@ -1,40 +1,12 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-.venv
-pip-log.txt
-pip-delete-this-directory.txt
+# Ignore docking data and results
+data/
+phase3_output/
+*.pdbqt
+*.csv
+*.log
 
-# IDE
+# Ignore Python/IDE files
+__pycache__/
+.ipynb_checkpoints/
 .vscode/
 .idea/
-*.swp
-*.swo
-*~
-.DS_Store
-
-# Data files
-data/output/
-*.csv
-!data/input/*.csv
-
-# Data analysis
-*.xlsx
-*.xls
-*.json
-
-# Jupyter
-.ipynb_checkpoints/
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-dist/
-build/
-*.egg-info/

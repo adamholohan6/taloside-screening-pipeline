@@ -331,6 +331,20 @@ class GlycoLibraryGenerator:
             except Exception as e2:
                 return False, None, f"Sanitization failed: {e}"
 
+        # Neutralize charges on triazole nitrogens to fix charge preservation issue
+        # RDKit preserves azide charges during reaction, causing invalid triazoles
+        # Only neutralize nitrogens in 5-membered rings with 3 nitrogens (triazoles)
+        # Do this AFTER sanitization to preserve aromaticity perception
+        for ring in Chem.GetSymmSSSR(product_mol):
+            if len(ring) == 5:
+                n_count = sum(1 for idx in ring if product_mol.GetAtomWithIdx(idx).GetSymbol() == "N")
+                c_count = sum(1 for idx in ring if product_mol.GetAtomWithIdx(idx).GetSymbol() == "C")
+                if n_count == 3 and c_count == 2:
+                    for idx in ring:
+                        atom = product_mol.GetAtomWithIdx(idx)
+                        if atom.GetSymbol() == "N":
+                            atom.SetFormalCharge(0)
+
         mol_wt = Descriptors.MolWt(product_mol)
         if not (self.config.min_product_mw <= mol_wt <= self.config.max_product_mw):
             return False, None, (

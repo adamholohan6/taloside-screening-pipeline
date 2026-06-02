@@ -1,0 +1,16 @@
+LICENSE
+README.md
+setup.py
+src/taloside_pipeline/__init__.py
+src/taloside_pipeline/descriptor_calculator.py
+src/taloside_pipeline/glycolibrary_generator.py
+src/taloside_pipeline/library_generator.py
+src/taloside_pipeline/phase2_integration.py
+src/taloside_screening_pipeline.egg-info/PKG-INFO
+src/taloside_screening_pipeline.egg-info/SOURCES.txt
+src/taloside_screening_pipeline.egg-info/dependency_links.txt
+src/taloside_screening_pipeline.egg-info/entry_points.txt
+src/taloside_screening_pipeline.egg-info/requires.txt
+src/taloside_screening_pipeline.egg-info/top_level.txt
+tests/test_descriptor_calculator.py
+tests/test_library_generator.py

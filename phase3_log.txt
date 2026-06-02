@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 194, in _run_module_as_main
+  File "<frozen runpy>", line 164, in _get_module_details
+  File "<frozen importlib._bootstrap_external>", line 893, in get_code
+  File "<frozen importlib._bootstrap_external>", line 823, in source_to_code
+  File "<frozen importlib._bootstrap>", line 491, in _call_with_frames_removed
+  File "C:\Users\adamh\OneDrive - National University of Ireland, Galway\Desktop\taloside-screening-pipeline-master\src\taloside_pipeline\phase3_docking_FIXED.py", line 258
+    block = "
+            ^
+SyntaxError: unterminated string literal (detected at line 258)

@@ -18,7 +18,7 @@ from rdkit.Chem import Descriptors
 logger = logging.getLogger(__name__)
 
 
-def validate_smiles(smiles_string: str) -> Chem.Mol:
+def validate_smiles(smiles_string):
     """
     Validate a SMILES string.
     
@@ -32,11 +32,11 @@ def validate_smiles(smiles_string: str) -> Chem.Mol:
         mol = Chem.MolFromSmiles(smiles_string)
         return mol
     except Exception as e:
-        logger.warning(f"SMILES validation error: {e}")
+        logger.warning("SMILES validation error: " + str(e))
         return None
 
 
-def calculate_descriptors(mol: Chem.Mol) -> Dict[str, float]:
+def calculate_descriptors(mol):
     """
     Calculate physicochemical descriptors for a molecule.
     
@@ -56,7 +56,7 @@ def calculate_descriptors(mol: Chem.Mol) -> Dict[str, float]:
     }
 
 
-def process_compounds(compounds_dict: Dict[str, str]) -> Tuple[pd.DataFrame, int]:
+def process_compounds(compounds_dict):
     """
     Process a dictionary of compounds and calculate their descriptors.
     
@@ -74,23 +74,24 @@ def process_compounds(compounds_dict: Dict[str, str]) -> Tuple[pd.DataFrame, int
         
         if mol is not None:
             descriptors = calculate_descriptors(mol)
-            results.append({
+            result = {
                 "Compound": name,
-                "SMILES": smiles,
-                **descriptors
-            })
-            logger.info(f"[OK] Processed {name}")
+                "SMILES": smiles
+            }
+            result.update(descriptors)
+            results.append(result)
+            logger.info("[OK] Processed " + name)
         else:
-            logger.warning(f"[X] Could not process {name}. Invalid SMILES string.")
+            logger.warning("[X] Could not process " + name + ". Invalid SMILES string.")
             failed_compounds.append(name)
     
     if failed_compounds:
-        logger.warning(f"Failed to process: {', '.join(failed_compounds)}")
+        logger.warning("Failed to process: " + ', '.join(failed_compounds))
     
     return pd.DataFrame(results), len(failed_compounds)
 
 
-def load_compounds_from_dict() -> Dict[str, str]:
+def load_compounds_from_dict():
     """
     Returns the library of taloside compounds.
     
@@ -111,7 +112,7 @@ def load_compounds_from_dict() -> Dict[str, str]:
     }
 
 
-def calculate_library_descriptors(output_path: Path = None) -> Tuple[pd.DataFrame, int]:
+def calculate_library_descriptors(output_path=None):
     """
     Calculate descriptors for the default taloside library.
     
@@ -124,12 +125,12 @@ def calculate_library_descriptors(output_path: Path = None) -> Tuple[pd.DataFram
     logger.info("Loading taloside compound library...")
     compounds = load_compounds_from_dict()
     
-    logger.info(f"Processing {len(compounds)} compounds...")
+    logger.info("Processing " + str(len(compounds)) + " compounds...")
     df, failed_count = process_compounds(compounds)
     
     if output_path and not df.empty:
         df.to_csv(output_path, index=False)
-        logger.info(f"Data saved to: {output_path.absolute()}")
+        logger.info("Data saved to: " + str(output_path.absolute()))
     
     return df, failed_count
 
@@ -168,14 +169,14 @@ Examples:
             logger.error("No compounds were successfully processed.")
             sys.exit(1)
         
-        logger.info(f"\n[OK] SUCCESS! Processed {len(df)} compounds.")
-        logger.info(f"Data saved to: {output_path.absolute()}")
+        logger.info("\n[OK] SUCCESS! Processed " + str(len(df)) + " compounds.")
+        logger.info("Data saved to: " + str(output_path.absolute()))
         
         if failed_count > 0:
-            logger.warning(f"Note: {failed_count} compound(s) failed to process.")
+            logger.warning("Note: " + str(failed_count) + " compound(s) failed to process.")
         
     except Exception as e:
-        logger.error(f"An error occurred: {e}")
+        logger.error("An error occurred: " + str(e))
         sys.exit(1)
 
 
