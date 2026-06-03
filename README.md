@@ -5,7 +5,7 @@
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
 [![RDKit](https://img.shields.io/badge/RDKit-2022.09.1+-green.svg)](https://rdkit.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20476422.svg)](https://doi.org/10.5281/zenodo.20476422)
+[![DOI](https://doi.org/10.5281/zenodo.20476421)
 
 ---
 
