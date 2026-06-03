@@ -439,7 +439,7 @@ class VinaDocking:
         # produces one clear top-level message instead of N cryptic ones.
         try:
             result = subprocess.run(
-                ["obabel", "--version"],
+                ["obabel", "-V"],   # -V is portable; --version exits non-zero on OB 3.1.x
                 capture_output=True, text=True, check=False
             )
             if result.returncode != 0:
