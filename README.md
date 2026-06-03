@@ -212,5 +212,5 @@ For questions or suggestions, please open an issue on GitHub.
 
 ## How to cite
 
-Holohan, A. (2026). Taloside Screening Pipeline (Version 1.0). Zenodo.
-https://doi.org/10.5281/zenodo.20476422
+Holohan, A. (2026). Taloside Screening Pipeline (Version 2.0). Zenodo.
+https://doi.org/10.5281/zenodo.20476421
