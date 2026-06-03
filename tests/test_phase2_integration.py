@@ -84,7 +84,10 @@ def test_compute_lead_scores_formula_and_sorting(sample_library_df):
     assert "lead_score" in scored.columns
     assert scored["lead_score"].between(0, 1).all()
     assert scored["lead_score"].is_monotonic_decreasing
-    assert list(scored.columns) == list(passed.columns) + ["lead_score"]
+    # compute_lead_scores adds synthetic_accessibility (the SA-penalty term)
+    # and lead_score; both must be present after the input columns.
+    assert "synthetic_accessibility" in scored.columns
+    assert list(scored.columns) == list(passed.columns) + ["synthetic_accessibility", "lead_score"]
 
 
 @pytest.mark.unit

@@ -8,12 +8,15 @@ import pytest
 from rdkit import Chem
 from taloside_pipeline.phase3_docking import (
     DockingConfig,
+    assert_clean_receptor_pdbqt,
     VinaDocking,
     compute_rmsd,
     embed_ligand_3d,
+    extract_ligand_coords_from_pdb,
     minmax_normalize,
     mol_to_pdbqt_string,
     parse_vina_affinity,
+    validate_ligand_pdbqt,
 )
 
 
@@ -28,6 +31,11 @@ def docking_config(tmp_path):
         output_dir=tmp_path / "phase3_output",
         lead_csv=tmp_path / "07_lead_scored.csv",
     )
+
+
+@pytest.fixture
+def clean_receptor_pdbqt():
+    return Path("data/docking/3ZSJ_clean.pdbqt")
 
 
 @pytest.fixture
@@ -75,6 +83,61 @@ def test_embed_and_pdbqt_benzene():
     assert "ROOT" in pdbqt
     assert "TORSDOF" in pdbqt
     assert "ATOM" in pdbqt
+
+
+@pytest.mark.unit
+def test_clean_receptor_is_clean(clean_receptor_pdbqt):
+    assert_clean_receptor_pdbqt(clean_receptor_pdbqt)
+
+
+@pytest.mark.unit
+def test_contaminated_receptor_is_rejected():
+    receptor = Path("data/docking/3ZSJ.pdbqt")
+    with pytest.raises(AssertionError, match="forbidden residues"):
+        assert_clean_receptor_pdbqt(receptor)
+
+
+@pytest.mark.unit
+def test_ligand_pdbqt_has_charges_and_torsions(tmp_path):
+    """Open Babel must produce a PDBQT with non-zero Gasteiger charges and TORSDOF."""
+    # n-propylbenzene: 2 rotatable bonds, simple structure, exercises the full
+    # embed → obabel → validate path without depending on pipeline output files.
+    mol = Chem.MolFromSmiles("CCCc1ccccc1")
+    embedded, status = embed_ligand_3d(mol)
+    assert status == "success"
+    pdbqt = tmp_path / "propylbenzene.pdbqt"
+    mol_to_pdbqt_string(embedded, conf_id=0, name="LIG")   # smoke-test the string form
+    from taloside_pipeline.phase3_docking import mol_to_pdbqt_file_openbabel
+    mol_to_pdbqt_file_openbabel(embedded, pdbqt, conf_id=0, name="LIG")
+    validate_ligand_pdbqt(pdbqt, expected_rotatable_bonds=2)
+
+
+@pytest.mark.unit
+def test_all_zero_charge_pdbqt_is_rejected(tmp_path):
+    """validate_ligand_pdbqt must reject a PDBQT whose charges are all zero.
+
+    This reproduces the pre-Open Babel manual writer output where Gasteiger
+    charges were never applied.  The stub is written inline so the test is
+    self-contained and does not depend on leftover files from old pipeline runs.
+    """
+    pdbqt = tmp_path / "zero_charges.pdbqt"
+    pdbqt.write_text(
+        "ROOT\n"
+        "ATOM      1  C   LIG     1       0.000   0.000   0.000  1.00  0.00"
+        "     0.000 C \n"
+        "ENDROOT\n"
+        "TORSDOF 0\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="all-zero charges"):
+        validate_ligand_pdbqt(pdbqt)
+
+
+@pytest.mark.unit
+def test_validation_extracts_full_bgc_gal():
+    coords, mol = extract_ligand_coords_from_pdb(Path("data/docking/3ZSJ.pdb"))
+    assert coords.shape[0] == 23
+    assert mol.GetNumAtoms() == 23
 
 
 @pytest.mark.unit
@@ -159,8 +222,8 @@ def test_validate_receptor_asserts_high_rmsd(docking_config):
             return_value=(Chem.MolFromSmiles("O"), "success"),
         ):
             with mock.patch(
-                "taloside_pipeline.phase3_docking.mol_to_pdbqt_string",
-                return_value="ROOT\nENDROOT\nTORSDOF 0\n",
+                "taloside_pipeline.phase3_docking.mol_to_pdbqt_file_openbabel",
+                return_value=Path("phase3_output/validation/lactose_redock.pdbqt"),
             ):
                 with mock.patch.object(docker, "_build_vina_command", return_value=["vina"]):
                     with mock.patch("subprocess.run") as mock_run:
