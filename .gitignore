@@ -21,9 +21,14 @@ htmlcov/
 *_FIXED.py
 *_FIXED_copy.py
 *_new.py
+*.bak
 run_diagnostic.py
 phase3_clean_run_summary.md
+phase3_output_clean/
 scripts/
+
+# Ignore generated plots (outputs belong in phase2_output/, not src/)
+*.png
 
 # Ignore package build artefacts
 *.egg-info/
