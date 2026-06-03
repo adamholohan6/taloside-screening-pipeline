@@ -1,0 +1,22 @@
+# Python dependencies (pip-installable)
+rdkit>=2022.09.1
+pandas>=1.3.0
+numpy>=1.19.0
+scikit-learn>=0.24.0
+matplotlib>=3.4.0
+seaborn>=0.11.0
+
+# ============================================================================
+# External (non-pip) dependencies required at runtime:
+# ============================================================================
+#   - AutoDock Vina   (Phase 3 docking)
+#       https://vina.scripps.edu/downloads/
+#       The 'vina' executable must be on PATH or its full path supplied via
+#       DockingConfig.vina_executable.
+#
+#   - Open Babel      (Phase 3 ligand PDBQT preparation: Gasteiger charges,
+#                      rotatable-bond perception, ROOT/BRANCH/TORSDOF blocks)
+#       https://openbabel.org/wiki/Get_Open_Babel
+#       The 'obabel' command must be on PATH. VinaDocking.__init__ performs a
+#       pre-flight check and fails fast with a clear error if obabel is absent.
+# ============================================================================
