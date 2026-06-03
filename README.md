@@ -1,121 +1,156 @@
-# Taloside Screening Pipeline – Phase 2
+# Taloside Screening Pipeline – Phase 2 & 3
 
-**Virtual library generation, drug‑likeness filtering, and PAINS screening for taloside derivatives.**
+**Virtual library generation, drug-likeness filtering, PAINS screening, and AutoDock Vina docking for taloside-triazole derivatives against Galectin-3 (PDB: 3ZSJ).**
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
-[![RDKit](https://img.shields.io/badge/RDKit-2022.09.1-green.svg)](https://rdkit.org)
+[![RDKit](https://img.shields.io/badge/RDKit-2022.09.1+-green.svg)](https://rdkit.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20476422.svg)](https://doi.org/10.5281/zenodo.20476422)
 
+---
+
+## Overview
+
+This pipeline automates the generation and prioritisation of taloside-triazole
+derivatives as Galectin-3 (Gal-3) ligand candidates. Gal-3 is a β-galactoside-
+binding lectin overexpressed in cancer, fibrosis, and inflammation, and is
+currently in clinical evaluation as a drug target. Starting from a validated
+taloside azide scaffold, the pipeline:
+
+1. **Generates a virtual library** via CuAAC and RuAAC click chemistry
+   (8 building blocks × 2 regioisomers = 16 geometrically verified compounds)
+2. **Filters for drug-likeness** using carbohydrate-adjusted Lipinski thresholds
+3. **Screens for PAINS** using RDKit's validated FilterCatalog (PAINS_A/B/C)
+4. **Ranks compounds** by a composite lead score incorporating physicochemical
+   descriptors and a synthetic-accessibility term
+5. **Docks all leads** against the 3ZSJ Gal-3 CRD crystal structure using
+   AutoDock Vina with dynamic grid centring on the crystal lactose pose
 
 ---
 
-## 📌 Overview
-
-This pipeline automates the generation and prioritisation of taloside‑based Galectin‑3 (Gal‑3) ligand candidates, a protein implicated in cancer, fibrosis, and inflammation. Starting from a validated taloside scaffold (from previous MSc work), the pipeline:
-
-1. **Generates a virtual library** via click chemistry (8 building blocks × 2 regioisomers = 16 compounds)
-2. **Calculates physicochemical descriptors** (MW, LogP, TPSA, H‑bond donors/acceptors, rotatable bonds)
-3. **Applies Lipinski’s Rule of 5** with carbohydrate‑adjusted thresholds (MW ≤600, LogP ≤4, HBD ≤6, HBA ≤12)
-4. **Screens for PAINS** (Pan‑Assay Interference Compounds) using RDKit’s validated substructure filters
-
-All results are exported as CSV files for downstream analysis, docking, or experimental validation.
-
----
-
-## ✨ Key Results
+## Key Results
 
 | Metric | Value |
-|--------|-------|
-| **Compounds generated** | 16 (8 building blocks × 2 regioisomers) |
-| **Lipinski pass rate** | 87.5% (14 of 16 pass the carbohydrate‑adjusted filter) |
-| **PAINS flagged** | 0 (14 clean; 0 flagged; 0 undetermined) |
-| **Lead list** | `phase2_output/04_lipinski_clean_no_pains.csv` |
+|---|---|
+| **Compounds generated** | 16 (8 BBs × 2 regioisomers, all geometry-verified) |
+| **Lipinski pass rate** | 87.5% (14 / 16) |
+| **PAINS flagged** | 0 — all 14 clean |
+| **Lead score range** | 0.399 – 0.905 |
+| **Docking success** | 14 / 14 (100%) |
+| **Vina score range** | −4.98 to −6.14 kcal/mol |
+| **Top hit (combined score)** | SCAF-001_BB-004-4F_CuAAC_1 (0.922) |
 
-The generated set spans molecular weights of 490–579 Da and LogP 0.02–1.36. Fourteen compounds pass the carbohydrate‑adjusted filter; the two 2‑nitro analogues are retained for record but fail the HBA threshold in the current run.
+MW range: 490–579 Da · LogP range: 0.54–1.91 · TPSA: 168–211 Å²
+
+The two 2-nitrophenyl analogues fail Lipinski (HBA = 13 > threshold 12) and
+are retained in `03_lipinski_failed.csv` for reference.
 
 ---
 
-## 🛠️ Installation
+## Installation
 
-### Requirements
-- Python 3.8+ (use `python3` or `py -3` on Windows if `python` points to an older interpreter)
-- RDKit ≥2022.09.1
-- pandas, numpy (for descriptor calculation)
-
-### Setup
+### Python dependencies
 
 ```bash
-# Clone the repository
 git clone https://github.com/adamholohan6/taloside-screening-pipeline.git
 cd taloside-screening-pipeline
 
-# (Optional) Create a virtual environment
 python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate   # Windows: venv\Scripts\activate
 
-# Install runtime dependencies and register the package
 pip install -r requirements.txt
 pip install -e .
 ```
 
-For development, testing, and notebook execution:
+For development and testing:
 
 ```bash
 pip install -r requirements-dev.txt
 pip install -e .
 ```
 
-### Quick start
+### External dependencies (Phase 3)
 
-Run the full pipeline from the project root:
+Phase 3 docking requires two executables on `PATH`:
+
+| Tool | Purpose | Download |
+|---|---|---|
+| **AutoDock Vina** | Molecular docking | https://vina.scripps.edu/downloads/ |
+| **Open Babel 3.x** | Ligand PDBQT preparation (Gasteiger charges) | https://openbabel.org/wiki/Get_Open_Babel |
+
+Verify both are available before running Phase 3:
+
+```bash
+obabel -V        # should print: Open Babel 3.x.x
+vina --version   # should print version info
+```
+
+---
+
+## Running the pipeline
+
+### Phase 2 — Library generation and lead scoring
 
 ```bash
 python -m taloside_pipeline.phase2_integration
 ```
 
-Alternatively, use the console entry point:
-
-```bash
-taloside-phase2
-```
-
-Output CSV files are saved in `phase2_output/`:
+Outputs are written to `phase2_output/`:
 
 | File | Content |
 |---|---|
-| `01_all_generated_compounds.csv` | All 16 compounds with descriptors and regioisomer tags |
-| `02_lipinski_passed.csv` | Drug-like compounds (14 compounds) |
-| `03_lipinski_failed.csv` | Two 2-nitro analogues that fail the current HBA threshold |
-| `04_lipinski_clean_no_pains.csv` | High-priority leads — Lipinski-passing and PAINS-clean (14 compounds) |
-| `05_lipinski_with_pains.csv` | Lipinski-passing compounds flagged by PAINS (empty in the current curated set) |
-| `06_pains_undetermined.csv` | Compounds whose PAINS status could not be determined (empty in the current curated set) |
-| `07_lead_scored.csv` | Lipinski-passing compounds ranked by composite lead score |
+| `01_all_generated_compounds.csv` | All 16 geometry-verified compounds with descriptors |
+| `02_lipinski_passed.csv` | 14 compounds passing carbohydrate-adjusted Lipinski |
+| `03_lipinski_failed.csv` | 2 compounds failing (2-nitrophenyl series, HBA > 12) |
+| `04_lipinski_clean_no_pains.csv` | 14 Lipinski-passed, PAINS-clean compounds |
+| `05_lipinski_with_pains.csv` | PAINS-flagged compounds (empty for this library) |
+| `06_pains_undetermined.csv` | Compounds with undetermined PAINS status (empty) |
+| `07_lead_scored.csv` | 14 compounds ranked by composite lead score |
 
-For interactive visualisation (descriptor distributions, building block analysis, etc.), open the notebook:
+### Phase 3 — AutoDock Vina docking
+
+```python
+from pathlib import Path
+from taloside_pipeline.phase3_docking import DockingConfig, run_phase3_pipeline
+
+cfg = DockingConfig(
+    receptor_pdb=Path("data/docking/3ZSJ.pdb"),
+    receptor_pdbqt=Path("data/docking/3ZSJ_clean.pdbqt"),
+    vina_executable="vina",          # Windows: r"C:\path\to\vina.exe"
+    lead_csv=Path("phase2_output/07_lead_scored.csv"),
+)
+run_phase3_pipeline(cfg, validate=True)
+```
+
+Output is written to `phase3_output/08_docking_results.csv`. Running with
+`validate=True` auto-centres the docking grid on the crystal lactose pose
+(BGC+GAL residues from 3ZSJ.pdb) and performs a validation redock before
+screening the lead compounds.
+
+### Interactive notebook
 
 ```bash
 jupyter notebook notebooks/Phase2_VirtualLibraryExpansion.ipynb
 ```
 
-The notebook runs the same workflow as `phase2_integration.py` and exports the same seven CSV files to `phase2_output/`.
-
 ---
 
-## 📁 Project structure
+## Project structure
 
 ```text
 taloside-screening-pipeline/
-├── src/
-│   └── taloside_pipeline/
-│       ├── __init__.py
-│       ├── descriptor_calculator.py
-│       ├── glycolibrary_generator.py
-│       ├── library_generator.py   # compatibility wrapper
-│       └── phase2_integration.py
+├── src/taloside_pipeline/
+│   ├── __init__.py
+│   ├── glycolibrary_generator.py   # SMARTS-based combinatorial library engine
+│   ├── phase2_integration.py       # Lipinski → PAINS → lead scoring workflow
+│   ├── phase3_docking.py           # 3D prep, Open Babel, AutoDock Vina docking
+│   ├── descriptor_calculator.py    # Standalone descriptor utilities
+│   └── library_generator.py       # Compatibility wrapper
 ├── notebooks/
 │   └── Phase2_VirtualLibraryExpansion.ipynb
-├── tests/
+├── tests/                          # 53 unit tests (pytest)
+├── data/docking/                   # 3ZSJ.pdb, 3ZSJ_clean.pdbqt (not committed)
+├── CHANGELOG.md
 ├── requirements.txt
 ├── requirements-dev.txt
 ├── setup.py
@@ -124,49 +159,58 @@ taloside-screening-pipeline/
 
 ---
 
-## 🧪 Testing
-
-Run the unit tests from the project root:
+## Testing
 
 ```bash
-pytest
+pytest                  # run all 53 tests
+pytest -m unit          # unit tests only (no external tools required)
 ```
 
----
-
-## 📄 License
-
-This project is licensed under the MIT License – see the LICENSE file for details.
+All tests are self-contained. Phase 3 unit tests mock the Vina subprocess;
+only `test_embed_and_pdbqt_benzene` and `test_ligand_pdbqt_has_charges_and_torsions`
+require Open Babel to be on PATH.
 
 ---
 
-## 🔬 References
+## Limitations
 
-Lipinski, C. A. et al. (1997). *Adv. Drug Deliv. Rev.* – Rule of 5
-
-Baell, J. B. & Holloway, G. A. (2010). *J. Med. Chem.* – PAINS substructures
-
-RDKit: https://www.rdkit.org/
-
----
-
-## 🙏 Acknowledgements
-
-This work builds on MSc research conducted at the University of Galway under the supervision of Prof. Helen Blanchard and Dr. Chandan Kishor.
+- **Docking scores are not binding affinities.** AutoDock Vina scores are
+  used for within-library ranking only. No experimental K_d or IC₅₀ data are
+  available for these compounds.
+- **TPSA > 140 Å² for all compounds.** The Veber oral-bioavailability criterion
+  is not met, which is expected and acceptable for an extracellular target.
+- **Library size.** 16 compounds is a proof-of-concept enumeration. No
+  structure–activity relationships can be established at this scale.
 
 ---
 
-## 📧 Contact
+## References
 
-Adam Holohan – GitHub – ORCID (add your ORCID if you have one)
+- Lipinski, C. A. et al. (1997). *Adv. Drug Deliv. Rev.* — Rule of 5
+- Baell, J. B. & Holloway, G. A. (2010). *J. Med. Chem.* — PAINS substructures
+- Eberhardt, J. et al. (2021). *J. Chem. Inf. Model.* — AutoDock Vina 1.2
+- Macedo, J. N. A. et al. (2025). *Mol. Med.* — Galectin-3 inhibitor review
+- Öberg, C. T. et al. (2011). *ChemMedChem* — Taloside inhibitors of Gal-1/3
+- RDKit: https://www.rdkit.org/
+
+---
+
+## Acknowledgements
+
+This work builds on MSc research conducted at the University of Galway under
+the supervision of Prof. Helen Blanchard and Dr. Chandan Kishor.
+
+---
+
+## Contact
+
+Adam Holohan — [GitHub](https://github.com/adamholohan6)
 
 For questions or suggestions, please open an issue on GitHub.
 
 ---
 
-## 📌 How to cite
+## How to cite
 
-If you use this pipeline in your research, please cite the Zenodo archive:
-
-Holohan, A. (2026). Taloside Screening Pipeline – Phase 2 (Version 1.0). Zenodo. https://doi.org/10.5281/zenodo.20476422
-
+Holohan, A. (2026). Taloside Screening Pipeline (Version 1.0). Zenodo.
+https://doi.org/10.5281/zenodo.20476422
