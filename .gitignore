@@ -7,6 +7,23 @@ phase3_output/
 
 # Ignore Python/IDE files
 __pycache__/
+*.pyc
 .ipynb_checkpoints/
 .vscode/
 .idea/
+
+# Ignore tool/editor state
+.continue/
+.coverage
+htmlcov/
+
+# Ignore stale backup and scratch files
+*_FIXED.py
+*_FIXED_copy.py
+*_new.py
+run_diagnostic.py
+phase3_clean_run_summary.md
+scripts/
+
+# Ignore package build artefacts
+*.egg-info/
