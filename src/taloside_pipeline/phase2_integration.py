@@ -327,22 +327,34 @@ def compute_lead_scores(df: pd.DataFrame) -> pd.DataFrame:
     """
     Compute a composite lead score for compound ranking.
 
-    Formula (defined here explicitly; previously only implicit in notebook):
-      lead_score = 0.4 × (1 − norm_TPSA)
-                 + 0.3 × (1 − norm_MW)
-                 + 0.2 × (1 − norm_LogP)
-                 + 0.1 × (1 − norm_RotBonds)
+    Formula (revised v2 — includes synthetic accessibility):
+      lead_score = 0.35 × (1 − norm_TPSA)
+                 + 0.25 × (1 − norm_MW)
+                 + 0.15 × (1 − norm_LogP)
+                 + 0.10 × (1 − norm_RotBonds)
+                 + 0.15 × synthetic_accessibility
 
-    where norm(x) = (x − min) / (max − min) over the library.
+    where norm(x) = (x − min) / (max − min) over the library and
+    synthetic_accessibility = 1.0 for 1,4-CuAAC, 0.5 for 1,5-RuAAC, 1.0 otherwise.
 
-    Rationale: higher weight on TPSA and MW because these two descriptors
-    most strongly correlate with permeability and synthetic tractability for
-    extracellular glycomimetic targets. Lower LogP is preferred for solubility.
-    RotBonds contributes least because conformational flexibility is less
-    critical for a rigid sugar scaffold.
+    Rationale:
+      - The original four-descriptor score gave identical results for both
+        regioisomers of any building block, because they share all physicochemical
+        descriptors. The combined score in Phase 3 was therefore driven entirely
+        by Vina, with the 0.6 lead-score weight contributing no discrimination
+        between regioisomers.
+      - CuAAC is the standard click-chemistry condition (Cu(I) catalysis,
+        ambient temperature, aqueous conditions, broad substrate tolerance).
+        RuAAC requires Cp*Ru catalysts that are more expensive, air-sensitive,
+        and less commonly stocked. A 1,4-CuAAC product is therefore preferred
+        when other descriptors are tied.
+      - The 0.5 penalty (not 0.0) reflects that RuAAC is still synthetically
+        accessible, just less convenient than CuAAC.
+      - Compounds with no recognised regioisomer (non-triazole or unlabelled)
+        get the neutral 1.0 value so they're not unfairly penalised.
 
-    Note: this score is a heuristic for within-library ranking only. It does
-    not incorporate target affinity. Docking scores should supersede it.
+    Note: this score is a within-library ranking heuristic and does not
+    incorporate target affinity. Docking scores should supersede it.
     """
     df = df.copy()
     for col, norm_col in [
@@ -354,11 +366,25 @@ def compute_lead_scores(df: pd.DataFrame) -> pd.DataFrame:
         mn, mx = df[col].min(), df[col].max()
         df[norm_col] = (df[col] - mn) / (mx - mn) if mx > mn else 0.0
 
+    # Synthetic accessibility term: prefer CuAAC over RuAAC, neutral otherwise
+    def _accessibility(reg: str) -> float:
+        if reg == "1,4-CuAAC":
+            return 1.0
+        if reg == "1,5-RuAAC":
+            return 0.5
+        return 1.0  # non-triazole or unlabelled: neutral
+
+    if 'regioisomer' in df.columns:
+        df['synthetic_accessibility'] = df['regioisomer'].astype(str).map(_accessibility)
+    else:
+        df['synthetic_accessibility'] = 1.0
+
     df['lead_score'] = (
-        0.4 * (1 - df['norm_tpsa']) +
-        0.3 * (1 - df['norm_mw'])   +
-        0.2 * (1 - df['norm_logp']) +
-        0.1 * (1 - df['norm_rot'])
+        0.35 * (1 - df['norm_tpsa']) +
+        0.25 * (1 - df['norm_mw'])   +
+        0.15 * (1 - df['norm_logp']) +
+        0.10 * (1 - df['norm_rot'])  +
+        0.15 * df['synthetic_accessibility']
     )
     df = df.drop(columns=['norm_tpsa','norm_mw','norm_logp','norm_rot'])
     return df.sort_values('lead_score', ascending=False)
@@ -439,12 +465,17 @@ def run_phase2_pipeline():
 
     # Score over all Lipinski-passed so ranking spans the full set
     scored_df = compute_lead_scores(lipinski_passed)
-    # Re-attach PAINS status
+    # Re-attach PAINS status.
+    # NOTE: this merge assumes compound_id is globally unique across regioisomers.
+    # If duplicate compound_ids are ever reintroduced (e.g. by removing the
+    # regioisomer suffix from GlycoLibraryGenerator), the join below must be
+    # changed to a composite key on ['compound_id', 'regioisomer'] to prevent
+    # a many-to-many Cartesian explosion (14 IDs × 4 rows = 56 rows).
     if 'pains_status' in clean_df.columns:
         scored_df = scored_df.merge(
             lipinski_passed[['compound_id']].assign(
                 pains_status=lambda x: x['compound_id'].map(
-                    {r['compound_id']: r.get('pains_status', '') 
+                    {r['compound_id']: r.get('pains_status', '')
                      for _, r in pd.concat([clean_df, pains_df, undetermined_df]).iterrows()}
                 ) if not all(df.empty for df in [clean_df, pains_df, undetermined_df]) else ''
             ),

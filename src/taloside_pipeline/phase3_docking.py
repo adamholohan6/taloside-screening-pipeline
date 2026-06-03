@@ -4,14 +4,14 @@ Phase 3: Molecular docking against Galectin-3 (PDB: 3ZSJ) via AutoDock Vina
 
 Workflow:
   1. Load Phase 2 lead list (07_lead_scored.csv)
-  2. Standardise SMILES, embed 3D conformers, write ligand PDBQT (no Open Babel)
+  2. Standardise SMILES, embed 3D conformers, write ligand PDBQT with Open Babel
   3. Dock each ligand with Vina (subprocess)
-  4. Merge docking affinities with Phase 2 lead scores → 08_docking_results.csv
-  5. Optional receptor validation: redock lactose vs crystal pose (RMSD < 2.0 Å)
+  4. Merge docking affinities with Phase 2 lead scores -> 08_docking_results.csv
+  5. Optional receptor validation: redock lactose vs crystal pose (RMSD < 2.0 A)
 
 Requires:
   - AutoDock Vina on PATH (or path set in DockingConfig.vina_executable)
-  - Prepared receptor PDBQT (3ZSJ) at paths given in DockingConfig
+  - Clean prepared receptor PDBQT (3ZSJ, no BGC/GAL/HOH) at paths given in DockingConfig
   - RDKit >= 2022.09.1
 """
 
@@ -20,23 +20,44 @@ from __future__ import annotations
 import logging
 import re
 import subprocess
-import sys
+import tempfile
+import traceback
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import numpy as np
 import pandas as pd
 from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolAlign
+from rdkit.Chem import AllChem, rdMolAlign, rdMolDescriptors
 
 try:
-    from .glycolibrary_generator import configure_logging, standardize_mol
-except ImportError:  # pragma: no cover
-    from glycolibrary_generator import configure_logging, standardize_mol  # type: ignore
+    from .library_generator import configure_logging
+except ImportError:
+    from library_generator import configure_logging  # type: ignore
 
 
-# β-D-galactopyranosyl-(1→4)-D-glucopyranose (lactose), CRD ligand in 3ZSJ
+try:
+    from .descriptor_calculator import validate_smiles
+except ImportError:
+    from descriptor_calculator import validate_smiles  # type: ignore
+
+
+def standardize_mol(mol: Chem.Mol) -> Optional[Chem.Mol]:
+    """Light standardisation: strip salts (largest fragment), neutralise charges."""
+    try:
+        from rdkit.Chem.MolStandardize import rdMolStandardize
+
+        largest = rdMolStandardize.FragmentParent(mol)
+        uncharge = rdMolStandardize.Uncharger()
+        std = uncharge.uncharge(largest)
+        Chem.SanitizeMol(std)
+        return std
+    except Exception:
+        return None
+
+
+# beta-D-galactopyranosyl-(1->4)-D-glucopyranose (lactose), CRD ligand in 3ZSJ
 LACTOSE_SMILES = (
     "OC[C@H]1O[C@@H](O[C@@H]2[C@@H](CO)O[C@H](O)[C@H](O)[C@@H]2O)"
     "[C@H](O)[C@@H](O)[C@@H]1O"
@@ -46,6 +67,8 @@ LACTOSE_SMILES = (
 LIGAND_RESNAMES = frozenset(
     {"LAC", "LCT", "BGC", "GAL", "GLC", "LNT", "NAG", "BMA", "FUL"}
 )
+CRYSTAL_LIGAND_RESNAMES = frozenset({"BGC", "GAL"})
+FORBIDDEN_RECEPTOR_RESNAMES = frozenset({"BGC", "GAL", "HOH"})
 
 _VINA_AFFINITY_RE = re.compile(
     r"^\s*1\s+(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)",
@@ -65,15 +88,17 @@ class DockingConfig:
     box_size: float = 20.0
     exhaustiveness: int = 8
     n_poses: int = 3
-    output_dir: Path = field(default_factory=lambda: Path("phase3_output"))
+    output_dir: Path = field(default_factory=lambda: Path("phase3_output_clean"))
     vina_executable: str = "vina"
-    lead_csv: Path = field(default_factory=lambda: Path("phase2_output/07_lead_scored.csv"))
+    lead_csv: Path = field(
+        default_factory=lambda: Path("phase2_output/07_lead_scored.csv")
+    )
     lactose_smiles: str = LACTOSE_SMILES
     rmsd_threshold_angstrom: float = 2.0
 
 
 def minmax_normalize(series: pd.Series, higher_is_better: bool = True) -> pd.Series:
-    """Min–max normalise a series to [0, 1]; constant series → 0.5."""
+    """Min-max normalise a series to [0, 1]; constant series -> 0.5."""
     values = pd.to_numeric(series, errors="coerce")
     mn, mx = values.min(), values.max()
     if pd.isna(mn) or pd.isna(mx) or mx <= mn:
@@ -84,198 +109,155 @@ def minmax_normalize(series: pd.Series, higher_is_better: bool = True) -> pd.Ser
     return norm
 
 
-def assign_autodock_atom_type(atom: Chem.Atom) -> Optional[str]:
-    """Map RDKit atom to AutoDock4/PDBQT atom type (heavy atoms only)."""
-    symbol = atom.GetSymbol()
-    if symbol == "H":
+def _pdb_resname(line: str) -> str:
+    return line[17:20].strip() if len(line) >= 20 else ""
+
+
+def residue_counts(pdbqt_path: Path, resnames: Set[str]) -> Dict[str, int]:
+    counts = {res: 0 for res in resnames}
+    for line in Path(pdbqt_path).read_text(encoding="utf-8", errors="replace").splitlines():
+        if line.startswith(("ATOM", "HETATM")):
+            resname = _pdb_resname(line)
+            if resname in counts:
+                counts[resname] += 1
+    return counts
+
+
+def assert_clean_receptor_pdbqt(receptor_pdbqt: Path) -> None:
+    """Fail if receptor PDBQT still contains crystal ligand or bulk waters."""
+    counts = residue_counts(Path(receptor_pdbqt), set(FORBIDDEN_RECEPTOR_RESNAMES))
+    present = {res: count for res, count in counts.items() if count}
+    if present:
+        details = ", ".join(f"{res}={count}" for res, count in sorted(present.items()))
+        raise AssertionError(
+            f"Receptor PDBQT is contaminated with forbidden residues: {details}. "
+            "Regenerate a clean apo receptor before docking."
+        )
+
+
+def write_clean_receptor_pdbqt(source_pdbqt: Path, output_pdbqt: Path) -> Path:
+    """Create an apo receptor PDBQT by removing crystal ligand residues and waters."""
+    source_pdbqt = Path(source_pdbqt)
+    output_pdbqt = Path(output_pdbqt)
+    kept: List[str] = []
+    removed = {res: 0 for res in FORBIDDEN_RECEPTOR_RESNAMES}
+
+    for line in source_pdbqt.read_text(encoding="utf-8", errors="replace").splitlines():
+        if line.startswith(("ATOM", "HETATM")):
+            resname = _pdb_resname(line)
+            if resname in removed:
+                removed[resname] += 1
+                continue
+        kept.append(line)
+
+    output_pdbqt.write_text("\n".join(kept).rstrip() + "\n", encoding="utf-8")
+    assert_clean_receptor_pdbqt(output_pdbqt)
+    return output_pdbqt
+
+
+def _parse_pdbqt_charge(line: str) -> Optional[float]:
+    parts = line.split()
+    if len(parts) < 2:
         return None
-    if symbol in {"F", "Cl", "Br", "I"}:
-        return symbol
-    if symbol == "S":
-        return "S"
-    if symbol == "P":
-        return "P"
-    if symbol == "O":
-        return "OA" if atom.GetTotalNumHs() > 0 else "O"
-    if symbol == "N":
-        return "NA" if atom.GetTotalNumHs() > 0 else "N"
-    if symbol == "C":
-        if atom.GetIsAromatic():
-            return "A"
-        return "C"
-    return "C"
+    try:
+        return float(parts[-2])
+    except ValueError:
+        return None
 
 
-def is_rotatable_bond(bond: Chem.Bond, mol: Chem.Mol) -> bool:
-    """Heuristic rotatable bond definition aligned with med-chem docking prep."""
-    if bond.GetBondType() != Chem.BondType.SINGLE:
-        return False
-    if bond.IsInRing():
-        return False
-    a1 = bond.GetBeginAtom()
-    a2 = bond.GetEndAtom()
-    if a1.GetDegree() == 1 or a2.GetDegree() == 1:
-        return False
-    # Exclude amide C–N
-    amide = Chem.MolFromSmarts("C(=O)N")
-    if mol.HasSubstructMatch(amide):
-        for match in mol.GetSubstructMatches(amide):
-            c_idx, n_idx = match[0], match[1]
-            if {a1.GetIdx(), a2.GetIdx()} == {c_idx, n_idx}:
-                return False
-    return True
+def _parse_torsdof(pdbqt_text: str) -> Optional[int]:
+    for line in pdbqt_text.splitlines():
+        if line.startswith("TORSDOF"):
+            parts = line.split()
+            if len(parts) >= 2:
+                return int(parts[1])
+    return None
 
 
-def get_rotatable_bonds(mol: Chem.Mol) -> List[Tuple[int, int]]:
-    """Return list of (begin_idx, end_idx) for rotatable bonds."""
-    bonds: List[Tuple[int, int]] = []
-    for bond in mol.GetBonds():
-        if is_rotatable_bond(bond, mol):
-            bonds.append((bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()))
-    return bonds
+def validate_ligand_pdbqt(pdbqt_path: Path, expected_rotatable_bonds: Optional[int] = None) -> None:
+    """Validate that a ligand PDBQT has charges and plausible torsion metadata."""
+    text = Path(pdbqt_path).read_text(encoding="utf-8", errors="replace")
+    atom_lines = [line for line in text.splitlines() if line.startswith(("ATOM", "HETATM"))]
+    if not atom_lines:
+        raise ValueError(f"Ligand PDBQT has no atoms: {pdbqt_path}")
 
+    charges = [charge for line in atom_lines for charge in [_parse_pdbqt_charge(line)] if charge is not None]
+    if not charges:
+        raise ValueError(f"Ligand PDBQT has no parseable charges: {pdbqt_path}")
+    if all(abs(charge) < 1e-4 for charge in charges):
+        raise ValueError(f"Ligand PDBQT has all-zero charges: {pdbqt_path}")
 
-def _fragment_atom_indices(mol: Chem.Mol, break_a: int, break_b: int) -> Tuple[Set[int], Set[int]]:
-    """Split molecule into two atom sets by removing bond a–b."""
-    rw = Chem.RWMol(mol)
-    if rw.GetBondBetweenAtoms(break_a, break_b) is not None:
-        rw.RemoveBond(break_a, break_b)
-    frags = Chem.GetMolFrags(rw, asMols=False)
-    if len(frags) != 2:
-        return set(frags[0]) if frags else set(), set()
-    a_set, b_set = set(frags[0]), set(frags[1])
-    if break_a in a_set:
-        return a_set, b_set
-    return b_set, a_set
-
-
-def _pdbqt_atom_line(
-    mol: Chem.Mol,
-    conf_id: int,
-    atom_idx: int,
-    serial: int,
-) -> str:
-    atom = mol.GetAtomWithIdx(atom_idx)
-    ad_type = assign_autodock_atom_type(atom)
-    if ad_type is None:
-        return ""
-    pos = mol.GetConformer(conf_id).GetAtomPosition(atom_idx)
-    return (
-        f"ATOM  {serial:5d}  {ad_type:2s}  LIG A   1    "
-        f"{pos.x:8.3f}{pos.y:8.3f}{pos.z:8.3f}  1.00  0.00    "
-        f"{ad_type:2s}\n"
-    )
-
-
-def _write_pdbqt_branch(
-    mol: Chem.Mol,
-    conf_id: int,
-    atom_indices: Set[int],
-    lines: List[str],
-    serial_counter: List[int],
-    rotatable_bonds: List[Tuple[int, int]],
-    depth: int = 0,
-) -> None:
-    """Recursively emit ROOT / BRANCH / ENDBRANCH blocks for a fragment."""
-    remaining = set(atom_indices)
-    local_rot = [
-        (a, b)
-        for a, b in rotatable_bonds
-        if a in remaining and b in remaining
-    ]
-
-    if not local_rot:
-        lines.append("ROOT\n")
-        for idx in sorted(remaining):
-            serial_counter[0] += 1
-            line = _pdbqt_atom_line(mol, conf_id, idx, serial_counter[0])
-            if line:
-                lines.append(line)
-        lines.append("ENDROOT\n")
-        return
-
-    # Pick bond separating smallest branch (AutoDock-style)
-    best_bond = None
-    best_branch_size = len(remaining) + 1
-    for a, b in local_rot:
-        side_a, side_b = _fragment_atom_indices(mol, a, b)
-        branch_a = side_a & remaining
-        branch_b = side_b & remaining
-        if not branch_a or not branch_b:
-            continue
-        if len(branch_a) <= len(branch_b):
-            root_atoms, branch_atoms, root_atom, branch_atom = (
-                remaining - branch_a,
-                branch_a,
-                b,
-                a,
+    torsdof = _parse_torsdof(text)
+    if torsdof is None:
+        raise ValueError(f"Ligand PDBQT is missing TORSDOF: {pdbqt_path}")
+    if expected_rotatable_bonds and expected_rotatable_bonds > 0:
+        if torsdof <= 0:
+            raise ValueError(
+                f"Ligand PDBQT has TORSDOF {torsdof} but RDKit expects "
+                f"{expected_rotatable_bonds} rotatable bonds: {pdbqt_path}"
             )
-        else:
-            root_atoms, branch_atoms, root_atom, branch_atom = (
-                remaining - branch_b,
-                branch_b,
-                a,
-                b,
-            )
-        if 0 < len(branch_atoms) < best_branch_size:
-            best_branch_size = len(branch_atoms)
-            best_bond = (root_atoms, branch_atoms, root_atom, branch_atom, a, b)
-
-    if best_bond is None:
-        lines.append("ROOT\n")
-        for idx in sorted(remaining):
-            serial_counter[0] += 1
-            line = _pdbqt_atom_line(mol, conf_id, idx, serial_counter[0])
-            if line:
-                lines.append(line)
-        lines.append("ENDROOT\n")
-        return
-
-    root_atoms, branch_atoms, root_atom, branch_atom, _, _ = best_bond
-
-    lines.append("ROOT\n")
-    for idx in sorted(root_atoms):
-        serial_counter[0] += 1
-        line = _pdbqt_atom_line(mol, conf_id, idx, serial_counter[0])
-        if line:
-            lines.append(line)
-    lines.append("ENDROOT\n")
-
-    lines.append(f"BRANCH {root_atom + 1:4d} {branch_atom + 1:4d}\n")
-    _write_pdbqt_branch(
-        mol, conf_id, branch_atoms, lines, serial_counter, rotatable_bonds, depth + 1
-    )
-    lines.append("ENDBRANCH\n")
+        if "BRANCH" not in text:
+            raise ValueError(f"Flexible ligand PDBQT lacks BRANCH records: {pdbqt_path}")
 
 
-def mol_to_pdbqt_string(mol: Chem.Mol, conf_id: int = 0, name: str = "LIG") -> str:
-    """
-    Format an RDKit conformer as an AutoDock/Vina ligand PDBQT string.
-
-    Handles AD4 atom types, coordinates, and rotatable-bond tree (ROOT/BRANCH/TORSDOF).
-    """
+def mol_to_pdbqt_file_openbabel(
+    mol: Chem.Mol,
+    output_pdbqt: Path,
+    *,
+    conf_id: int = 0,
+    name: str = "LIG",
+    obabel_executable: str = "obabel",
+) -> Path:
+    """Generate a ligand PDBQT with Open Babel Gasteiger charges and torsions."""
     mol = Chem.Mol(mol)
     if mol.GetNumConformers() == 0:
         raise ValueError("Molecule has no conformer for PDBQT export")
+    mol.SetProp("_Name", name)
 
-    rotatable = get_rotatable_bonds(mol)
-    lines: List[str] = [f"REMARK  Name = {name}\n"]
-    serial_counter = [0]
-    all_heavy = {
-        a.GetIdx()
-        for a in mol.GetAtoms()
-        if assign_autodock_atom_type(a) is not None
-    }
-    _write_pdbqt_branch(mol, conf_id, all_heavy, lines, serial_counter, rotatable)
-    lines.append(f"TORSDOF {len(rotatable)}\n")
-    return "".join(lines)
+    output_pdbqt = Path(output_pdbqt)
+    output_pdbqt.parent.mkdir(parents=True, exist_ok=True)
+    expected_rotors = rdMolDescriptors.CalcNumRotatableBonds(Chem.RemoveHs(mol))
 
+    with tempfile.TemporaryDirectory() as tmp:
+        sdf_path = Path(tmp) / f"{name}.sdf"
+        writer = Chem.SDWriter(str(sdf_path))
+        writer.write(mol, confId=conf_id)
+        writer.close()
+
+        cmd = [
+            obabel_executable,
+            str(sdf_path),
+            "-O",
+            str(output_pdbqt),
+            "-p",
+            "7.4",
+            "--partialcharge",
+            "gasteiger",
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        if result.returncode != 0:
+            raise RuntimeError(
+                "Open Babel ligand PDBQT conversion failed.\n"
+                f"Command: {' '.join(cmd)}\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
+            )
+
+    validate_ligand_pdbqt(output_pdbqt, expected_rotatable_bonds=expected_rotors)
+    return output_pdbqt
+
+
+def mol_to_pdbqt_string(mol: Chem.Mol, conf_id: int = 0, name: str = "LIG") -> str:
+    """Generate a ligand PDBQT string using Open Babel, not the old manual writer."""
+    with tempfile.TemporaryDirectory() as tmp:
+        out = mol_to_pdbqt_file_openbabel(
+            mol,
+            Path(tmp) / f"{name}.pdbqt",
+            conf_id=conf_id,
+            name=name,
+        )
+        return out.read_text(encoding="utf-8", errors="replace")
 
 def embed_ligand_3d(mol: Chem.Mol, random_seed: int = 42) -> Tuple[Optional[Chem.Mol], str]:
-    """
-    Embed and MMFF-optimise a 3D conformer.
-    Safely catches internal RDKit C++ exceptions to prevent full pipeline failure.
-    """
+    """Embed and MMFF-optimise a 3D conformer."""
     try:
         work = Chem.Mol(mol)
         work = Chem.AddHs(work)
@@ -287,10 +269,12 @@ def embed_ligand_3d(mol: Chem.Mol, random_seed: int = 42) -> Tuple[Optional[Chem
             code = AllChem.EmbedMolecule(work, randomSeed=random_seed)
         if code != 0:
             return None, "prep_failed"
+
         try:
             AllChem.MMFFOptimizeMolecule(work, maxIters=500)
         except Exception:
             pass
+
         return work, "success"
     except Exception:
         return None, "prep_failed"
@@ -312,10 +296,15 @@ def parse_vina_affinity(stdout: str, stderr: str = "") -> Optional[float]:
     return None
 
 
+
+
 def parse_pdbqt_coords(pdbqt_path: Path) -> np.ndarray:
-    """Parse heavy-atom coordinates from a PDBQT file."""
+    """Parse heavy-atom coordinates from the FIRST pose of a PDBQT file."""
     coords: List[List[float]] = []
     for line in pdbqt_path.read_text(encoding="utf-8", errors="replace").splitlines():
+        # AutoDock Vina outputs multiple poses. Stop after reading Model 1.
+        if line.startswith("ENDMDL"):
+            break
         if line.startswith(("ATOM", "HETATM")):
             try:
                 x = float(line[30:38])
@@ -333,10 +322,11 @@ def extract_ligand_coords_from_pdb(
     pdb_path: Path,
     resnames: Optional[Set[str]] = None,
 ) -> Tuple[np.ndarray, Chem.Mol]:
-    """
-    Extract the largest matching HETATM ligand from a crystal PDB.
+    """Extract the crystal ligand coordinates from a PDB.
 
-    Returns (N×3 coordinates, RDKit molecule from PDB block).
+    For 3ZSJ, the crystallographic lactose is split across BGC and GAL
+    residue names. Treat those residues as one validation ligand rather than
+    selecting only the larger monosaccharide.
     """
     resnames = resnames or set(LIGAND_RESNAMES)
     pdb_path = Path(pdb_path)
@@ -355,15 +345,25 @@ def extract_ligand_coords_from_pdb(
 
     if not lines_by_res:
         raise ValueError(
-            f"No ligand HETATM records found in {pdb_path} "
-            f"for residue names: {sorted(resnames)}"
+            f"No ligand HETATM records found in {pdb_path} for residue names: {sorted(resnames)}"
         )
 
-    best_res = max(lines_by_res.keys(), key=lambda r: len(lines_by_res[r]))
-    block = "\n".join(lines_by_res[best_res]) + "\n"
+    if CRYSTAL_LIGAND_RESNAMES.issubset(lines_by_res.keys()):
+        selected_res = ["BGC", "GAL"]
+        selected_lines = [
+            line
+            for resname in selected_res
+            for line in lines_by_res.get(resname, [])
+        ]
+        ligand_label = "BGC-GAL"
+    else:
+        ligand_label = max(lines_by_res.keys(), key=lambda r: len(lines_by_res[r]))
+        selected_lines = lines_by_res[ligand_label]
+
+    block = "\n".join(selected_lines) + "\n"
     mol = Chem.MolFromPDBBlock(block, sanitize=True, removeHs=True)
     if mol is None:
-        raise ValueError(f"RDKit could not parse ligand {best_res} from {pdb_path}")
+        raise ValueError(f"RDKit could not parse ligand {ligand_label} from {pdb_path}")
 
     conf = mol.GetConformer()
     coords = np.array(
@@ -373,26 +373,10 @@ def extract_ligand_coords_from_pdb(
     return coords, mol
 
 
-def compute_rmsd(
-    coords_a: np.ndarray,
-    coords_b: np.ndarray,
-    *,
-    align: bool = False,
-) -> float:
-    """
-    RMSD between two N×3 coordinate sets (same atom count).
-
-    Parameters
-    ----------
-    align
-        If True, apply Kabsch superposition before RMSD (for MCS-matched poses).
-        If False, compute direct RMSD in the input frame (standard redock check
-        when receptor is fixed and poses share the same coordinate system).
-    """
+def compute_rmsd(coords_a: np.ndarray, coords_b: np.ndarray, *, align: bool = False) -> float:
+    """RMSD between two N x 3 coordinate sets (same atom count)."""
     if coords_a.shape != coords_b.shape:
-        raise ValueError(
-            f"Coordinate shape mismatch: {coords_a.shape} vs {coords_b.shape}"
-        )
+        raise ValueError(f"Coordinate shape mismatch: {coords_a.shape} vs {coords_b.shape}")
     if coords_a.shape[0] < 1:
         raise ValueError("Need at least 1 atom for RMSD")
 
@@ -417,7 +401,7 @@ def compute_rmsd(
 
 
 def align_and_rmsd(ref_mol: Chem.Mol, mob_mol: Chem.Mol) -> float:
-    """MCS-based heavy-atom RMSD after alignment (for redocking validation)."""
+    """MCS-based heavy-atom RMSD after alignment."""
     ref = Chem.Mol(ref_mol)
     mob = Chem.Mol(mob_mol)
     if ref.GetNumConformers() == 0 or mob.GetNumConformers() == 0:
@@ -434,11 +418,7 @@ def align_and_rmsd(ref_mol: Chem.Mol, mob_mol: Chem.Mol) -> float:
         mob_idx = list(match)
         ref_idx = list(range(len(match)))
 
-    rmsd = rdMolAlign.AlignMol(
-        mob,
-        ref,
-        atomMap=list(zip(mob_idx, ref_idx)),
-    )
+    rmsd = rdMolAlign.AlignMol(mob, ref, atomMap=list(zip(mob_idx, ref_idx)))
     return float(rmsd)
 
 
@@ -454,11 +434,28 @@ class VinaDocking:
         (self.config.output_dir / "ligands").mkdir(exist_ok=True)
         (self.config.output_dir / "poses").mkdir(exist_ok=True)
 
+        # Pre-flight: confirm Open Babel is available. Without it, every ligand
+        # preparation will fail with a confusing per-compound error. Checking here
+        # produces one clear top-level message instead of N cryptic ones.
+        try:
+            result = subprocess.run(
+                ["obabel", "--version"],
+                capture_output=True, text=True, check=False
+            )
+            if result.returncode != 0:
+                raise RuntimeError("obabel returned non-zero exit code")
+            version_line = result.stdout.splitlines()[0].strip() if result.stdout else "version unknown"
+            self.logger.info(f"[OK] Open Babel available: {version_line}")
+        except FileNotFoundError:
+            raise RuntimeError(
+                "Open Babel (obabel) not found on PATH. "
+                "Phase 3 requires Open Babel for ligand PDBQT preparation with "
+                "Gasteiger charges and rotatable-bond perception. "
+                "Install from https://openbabel.org/wiki/Get_Open_Babel and ensure "
+                "the 'obabel' command is accessible before running Phase 3."
+            )
+
     def prepare_ligands(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Generate 3D conformers from SMILES; tag failed rows as ``prep_failed``.
-        Robustly heals triazole nitrogen explicit valence errors using a two-pass sanitization mask.
-        """
         out = df.copy()
         smiles_col = "product_smiles" if "product_smiles" in out.columns else "smiles"
         if smiles_col not in out.columns:
@@ -472,54 +469,81 @@ class VinaDocking:
 
         for _, row in out.iterrows():
             compound_id = str(row.get("compound_id", "unknown"))
-            smiles = row[smiles_col]
-            
-            # 1. Attempt standard parsing
-            mol = Chem.MolFromSmiles(smiles)
-            print("\n========================")
-            print("COMPOUND:", compound_id)
-            print("SMILES:", smiles)
-            print("========================")
-            # 2. Advanced Fallback: Two-pass sanitization mask for SMARTS triazole products
-            if mol is None:
-                
-                try:
-                    mol = Chem.MolFromSmiles(smiles, sanitize=False)
-                    if mol is not None:
+            smiles = str(row[smiles_col])
 
-                       print("\nATOM TABLE")
-                    for atom in mol.GetAtoms():
-                        print(
-                            atom.GetIdx(),
-                            atom.GetSymbol(),
-                            "charge=", atom.GetFormalCharge(),
-                            "degree=", atom.GetDegree(),
-                            "aromatic=", atom.GetIsAromatic()
-                        )
-                        
-    
-                        # Pass 1: Run all sanitization steps EXCEPT strict property/valence validation
-                        # This allows the engine to perceive ring systems and aromaticity first.
+            # Step 1: Attempt standard parsing
+            mol = Chem.MolFromSmiles(smiles)
+
+            # Step 2: Fallback with two-pass sanitization for triazole valence
+            # errors that survived from older Phase 2 outputs. With the current
+            # clean-SMARTS Phase 2, this fallback should rarely if ever run.
+            # Diagnostic output is at DEBUG level so it doesn't flood log
+            # aggregators that treat ERROR as an alerting signal.
+            if mol is None:
+                self.logger.warning(f"Fallback parse triggered for {compound_id}")
+                self.logger.debug(f"SMILES: {smiles}")
+
+                try:
+                    raw = Chem.MolFromSmiles(smiles, sanitize=False)
+
+                    if raw is not None:
+                        self.logger.debug("ATOM TABLE (before sanitization):")
+
+                        for atom in raw.GetAtoms():
+                            self.logger.debug(
+                                f"idx={atom.GetIdx():2d} "
+                                f"symbol={atom.GetSymbol():2s} "
+                                f"charge={atom.GetFormalCharge():2d} "
+                                f"degree={atom.GetDegree():2d} "
+                                f"explicitHs={atom.GetNumExplicitHs():2d} "
+                                f"aromatic={atom.GetIsAromatic()}"
+                            )
+
+                        # Pass 1: Sanitize without strict property/valence validation
                         mask = Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_PROPERTIES
-                        Chem.SanitizeMol(mol, sanitizeOps=mask)
-                        
+                        Chem.SanitizeMol(raw, sanitizeOps=mask)
+
                         # Graph repair: strip hypervalent explicit Hs from neutral ring nitrogens
-                        for atom in mol.GetAtoms():
+                        repairs_made = 0
+                        for atom in raw.GetAtoms():
                             if atom.GetAtomicNum() == 7:  # Nitrogen
                                 if atom.GetExplicitValence() > 3 and atom.GetFormalCharge() == 0:
                                     if atom.GetNumExplicitHs() > 0:
+                                        self.logger.debug(
+                                            f"Repairing N idx={atom.GetIdx()}: "
+                                            f"explicitHs {atom.GetNumExplicitHs()} -> 0"
+                                        )
                                         atom.SetNumExplicitHs(0)
-                        
-                        # Pass 2: Re-verify properties strictly now that graph anomalies are resolved
-                        mol.UpdatePropertyCache(strict=True)
-                        Chem.SanitizeMol(mol)
-                except Exception:
-                    mol = None
+                                        repairs_made += 1
+
+                        self.logger.debug(f"Repairs made: {repairs_made}")
+
+                        # Pass 2: Re-verify properties strictly
+                        raw.UpdatePropertyCache(strict=True)
+                        Chem.SanitizeMol(raw)
+
+                        self.logger.debug("ATOM TABLE (after sanitization):")
+                        for atom in raw.GetAtoms():
+                            self.logger.debug(
+                                f"idx={atom.GetIdx():2d} "
+                                f"symbol={atom.GetSymbol():2s} "
+                                f"charge={atom.GetFormalCharge():2d} "
+                                f"degree={atom.GetDegree():2d} "
+                                f"explicitHs={atom.GetNumExplicitHs():2d} "
+                                f"aromatic={atom.GetIsAromatic()}"
+                            )
+
+                        mol = raw
+                        self.logger.info(f"Fallback sanitization succeeded for {compound_id}")
+                    else:
+                        self.logger.warning(f"MolFromSmiles(sanitize=False) returned None for {compound_id}")
+                except Exception as exc:
+                    self.logger.warning(f"Fallback sanitization failed for {compound_id}: {exc}")
+                    self.logger.debug(traceback.format_exc())
 
             if mol is None:
                 statuses.append("prep_failed")
                 pdbqt_paths.append(None)
-                self.logger.warning(f"[prep] Invalid SMILES structure for {compound_id}")
                 continue
 
             std = standardize_mol(mol)
@@ -530,32 +554,29 @@ class VinaDocking:
             if status != "success" or embedded is None:
                 statuses.append("prep_failed")
                 pdbqt_paths.append(None)
-                self.logger.warning(f"[prep] 3D embedding failed for {compound_id}")
                 continue
 
             try:
-                pdbqt_text = mol_to_pdbqt_string(embedded, conf_id=0, name=compound_id)
                 lig_path = lig_dir / f"{compound_id}.pdbqt"
-                lig_path.write_text(pdbqt_text, encoding="utf-8")
+                mol_to_pdbqt_file_openbabel(
+                    embedded,
+                    lig_path,
+                    conf_id=0,
+                    name=compound_id,
+                )
+
                 statuses.append("success")
                 pdbqt_paths.append(str(lig_path))
-                self.logger.info(f"[prep] {compound_id} → {lig_path.name}")
             except Exception as exc:
+                self.logger.warning(f"[prep] PDBQT failed for {compound_id}: {exc}")
                 statuses.append("prep_failed")
                 pdbqt_paths.append(None)
-                self.logger.warning(f"[prep] PDBQT failed for {compound_id}: {exc}")
 
         out["generation_status"] = statuses
         out["ligand_pdbqt"] = pdbqt_paths
         return out
 
-    def _build_vina_command(
-        self,
-        ligand_pdbqt: Path,
-        output_pdbqt: Path,
-        log_path: Path,
-    ) -> List[str]:
-        half = self.config.box_size / 2.0
+    def _build_vina_command(self, ligand_pdbqt: Path, output_pdbqt: Path) -> List[str]:
         return [
             self.config.vina_executable,
             "--receptor",
@@ -579,22 +600,15 @@ class VinaDocking:
             "--num_modes",
             str(self.config.n_poses),
             "--out",
-            str(output_pdbqt)
-            # "--log" and "log_path" have been removed here to fix the v1.2.7 parse error
+            str(output_pdbqt),
         ]
 
     def run_docking(self, prepared_df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Run Vina via subprocess; parse best-pose affinity (kcal/mol) per compound.
-
-        Rows with ``generation_status != 'success'`` are marked ``dock_skipped``.
-        Failed Vina runs are marked ``dock_failed``.
-        """
         if not self.config.receptor_pdbqt.exists():
             raise FileNotFoundError(
-                f"Receptor PDBQT not found: {self.config.receptor_pdbqt}. "
-                "Prepare 3ZSJ receptor before docking."
+                f"Receptor PDBQT not found: {self.config.receptor_pdbqt}. Prepare 3ZSJ receptor before docking."
             )
+        assert_clean_receptor_pdbqt(self.config.receptor_pdbqt)
 
         out = prepared_df.copy()
         vina_scores: List[Optional[float]] = []
@@ -610,11 +624,24 @@ class VinaDocking:
                 continue
 
             lig_path = Path(row["ligand_pdbqt"])
-            pose_path = self.config.output_dir / "poses" / f"{compound_id}_out.pdbqt"
-            log_path = self.config.output_dir / "poses" / f"{compound_id}.log"
+            try:
+                smiles_col = "product_smiles" if "product_smiles" in row.index else "smiles"
+                expected_rotors = None
+                if smiles_col in row.index and pd.notna(row[smiles_col]):
+                    source_mol = Chem.MolFromSmiles(str(row[smiles_col]))
+                    if source_mol is not None:
+                        expected_rotors = rdMolDescriptors.CalcNumRotatableBonds(source_mol)
+                validate_ligand_pdbqt(lig_path, expected_rotatable_bonds=expected_rotors)
+            except Exception as exc:
+                self.logger.warning(f"[dock] Invalid ligand PDBQT for {compound_id}: {exc}")
+                vina_scores.append(None)
+                dock_statuses.append("dock_failed")
+                pose_paths.append(None)
+                continue
 
-            cmd = self._build_vina_command(lig_path, pose_path, log_path)
-            self.logger.info(f"[dock] Running Vina for {compound_id}")
+            pose_path = self.config.output_dir / "poses" / f"{compound_id}_out.pdbqt"
+
+            cmd = self._build_vina_command(lig_path, pose_path)
 
             try:
                 result = subprocess.run(
@@ -624,38 +651,19 @@ class VinaDocking:
                     check=False,
                     timeout=600,
                 )
-            except FileNotFoundError:
-                self.logger.error(
-                    f"Vina executable not found: {self.config.vina_executable}"
-                )
-                vina_scores.append(None)
-                dock_statuses.append("dock_failed")
-                pose_paths.append(None)
-                continue
-            except subprocess.TimeoutExpired:
-                self.logger.error(f"Vina timed out for {compound_id}")
+            except (FileNotFoundError, subprocess.TimeoutExpired):
                 vina_scores.append(None)
                 dock_statuses.append("dock_failed")
                 pose_paths.append(None)
                 continue
 
-            log_text = ""
-            if log_path.exists():
-                log_text = log_path.read_text(encoding="utf-8", errors="replace")
-
-            affinity = parse_vina_affinity(result.stdout, result.stderr + "\n" + log_text)
-
+            affinity = parse_vina_affinity(result.stdout, result.stderr)
             if affinity is None or result.returncode != 0:
-                self.logger.warning(
-                    f"[dock] Vina failed for {compound_id} "
-                    f"(returncode={result.returncode})"
-                )
                 vina_scores.append(None)
                 dock_statuses.append("dock_failed")
                 pose_paths.append(None)
                 continue
 
-            self.logger.info(f"[dock] {compound_id}: {affinity:.2f} kcal/mol")
             vina_scores.append(affinity)
             dock_statuses.append("dock_success")
             pose_paths.append(str(pose_path) if pose_path.exists() else None)
@@ -665,18 +673,12 @@ class VinaDocking:
         out["pose_pdbqt"] = pose_paths
         return out
 
-    def merge_with_lead_scores(
-        self,
-        docking_df: pd.DataFrame,
-        scored_df: pd.DataFrame,
-    ) -> pd.DataFrame:
-        """
-        Join on ``compound_id``; add ``combined_score`` =
-        0.4 × norm(vina_score) + 0.6 × norm(lead_score).
-
-        Vina affinities are inverted so more negative (favourable) scores map to
-        higher normalised values. Writes ``08_docking_results.csv`` to output_dir.
-        """
+    def merge_with_lead_scores(self, docking_df: pd.DataFrame, scored_df: pd.DataFrame) -> pd.DataFrame:
+        # NOTE: this merge assumes compound_id is globally unique across regioisomers.
+        # If duplicate compound_ids are ever reintroduced (e.g. by removing the
+        # regioisomer suffix from GlycoLibraryGenerator), the join below must be
+        # changed to a composite key on ['compound_id', 'regioisomer'] to prevent
+        # a many-to-many Cartesian explosion in the docking results table.
         merged = docking_df.merge(
             scored_df[["compound_id", "lead_score"]],
             on="compound_id",
@@ -689,7 +691,6 @@ class VinaDocking:
         norm_lead = pd.Series(np.nan, index=merged.index, dtype=float)
 
         if docked.any():
-            # More negative Vina affinity = better → higher_is_better after invert
             norm_vina.loc[docked] = minmax_normalize(
                 merged.loc[docked, "vina_score"],
                 higher_is_better=False,
@@ -716,20 +717,9 @@ class VinaDocking:
             ascending=[False, True],
             na_position="last",
         ).to_csv(out_path, index=False)
-        self.logger.info(f"[OK] Wrote merged docking results → {out_path}")
         return merged
 
     def validate_receptor(self) -> bool:
-        """
-        Redock lactose into 3ZSJ; assert RMSD < 2.0 Å vs crystal pose.
-
-        Raises
-        ------
-        AssertionError
-            If RMSD >= configured threshold or validation cannot complete.
-        FileNotFoundError
-            If receptor files are missing.
-        """
         if not self.config.receptor_pdbqt.exists():
             raise FileNotFoundError(
                 f"Receptor PDBQT required for validation: {self.config.receptor_pdbqt}"
@@ -738,10 +728,17 @@ class VinaDocking:
             raise FileNotFoundError(
                 f"Receptor PDB required for crystal ligand: {self.config.receptor_pdb}"
             )
+        assert_clean_receptor_pdbqt(self.config.receptor_pdbqt)
 
-        crystal_coords, crystal_mol = extract_ligand_coords_from_pdb(
-            self.config.receptor_pdb
-        )
+        crystal_coords, crystal_mol = extract_ligand_coords_from_pdb(self.config.receptor_pdb)
+
+        # --- NEW CODE: DYNAMICALLY CENTER THE GRID ---
+        true_center = crystal_coords.mean(axis=0)
+        self.config.center_x = float(true_center[0])
+        self.config.center_y = float(true_center[1])
+        self.config.center_z = float(true_center[2])
+        self.logger.info(f"Dynamically centered grid on crystal ligand: X={self.config.center_x:.2f}, Y={self.config.center_y:.2f}, Z={self.config.center_z:.2f}")
+        # ---------------------------------------------
 
         lactose = Chem.MolFromSmiles(self.config.lactose_smiles)
         if lactose is None:
@@ -754,132 +751,77 @@ class VinaDocking:
 
         lig_dir = self.config.output_dir / "validation"
         lig_dir.mkdir(parents=True, exist_ok=True)
-        # --- REPLACEMENT BLOCK ---
-        # We use OpenBabel to generate the PDBQT to ensure correct atom types (OA, OS, etc.)
-        lig_dir = self.config.output_dir / "validation"
-        lig_dir.mkdir(parents=True, exist_ok=True)
-        lactose_sdf = lig_dir / "lactose_temp.sdf"
+
         lactose_pdbqt = lig_dir / "lactose_redock.pdbqt"
+        mol_to_pdbqt_file_openbabel(
+            embedded,
+            lactose_pdbqt,
+            conf_id=0,
+            name="lactose",
+        )
 
-        # Export the RDKit molecule to an SDF first
-        writer = Chem.SDWriter(str(lactose_sdf))
-        writer.write(embedded)
-        writer.close()
 
-        # Use OpenBabel to convert to a valid PDBQT
-        # NOTE: If this fails, replace "obabel" with the full path to your executable
-        # e.g., r"C:\Program Files\OpenBabel-3.1.1\obabel.exe"
-        try:
-            subprocess.run([
-                "obabel", str(lactose_sdf), 
-                "-O", str(lactose_pdbqt), 
-                "-p", "7.4", 
-                "--partialcharge", "gasteiger"
-            ], check=True, capture_output=True)
-        except (subprocess.CalledProcessError, FileNotFoundError) as e:
-            raise RuntimeError(f"OpenBabel conversion failed. Make sure 'obabel' is installed and in your PATH. Error: {e}")
+
         pose_out = lig_dir / "lactose_redock_out.pdbqt"
-        log_out = lig_dir / "lactose_redock.log"
 
-        cmd = self._build_vina_command(lactose_pdbqt, pose_out, log_out)
-        self.logger.info("[validate] Redocking lactose for receptor validation")
+        cmd = self._build_vina_command(lactose_pdbqt, pose_out)
+        result = subprocess.run(cmd, capture_output=True, text=True, check=False, timeout=600)
 
-        # --- REPLACEMENT BLOCK ---
-        try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=600,
+        if result.returncode != 0 or not pose_out.exists():
+            raise AssertionError(
+                f"""Lactose redocking failed; cannot compute validation RMSD.
+Vina return code: {result.returncode}
+STDOUT:
+{result.stdout}
+STDERR:
+{result.stderr}"""
             )
             
-            if result.returncode != 0:
-                print("\n" + "="*50)
-                print("VINA DOCKING FAILED")
-                print("Command executed:", " ".join(cmd))
-                print("--- STDOUT (Messages) ---")
-                print(result.stdout)
-                print("--- STDERR (THE ERROR) ---")
-                print(result.stderr)
-                print("="*50 + "\n")
-                
-        except FileNotFoundError as exc:
-            raise AssertionError(
-                f"Vina not available for receptor validation: {exc}"
-            ) from exc
-        except FileNotFoundError as exc:
-            raise AssertionError(
-                f"Vina not available for receptor validation: {exc}"
-            ) from exc
-
-        log_text = ""
-        if log_out.exists():
-            log_text = log_out.read_text(encoding="utf-8", errors="replace")
-
-        affinity = parse_vina_affinity(result.stdout, result.stderr + "\n" + log_text)
-        if affinity is None or not pose_out.exists():
-            raise AssertionError(
-                "Lactose redocking failed; cannot compute validation RMSD. "
-                f"Vina return code: {result.returncode}"
-            )
-
-        self.logger.info(f"[validate] Lactose redock affinity: {affinity:.2f} kcal/mol")
 
         docked_coords = parse_pdbqt_coords(pose_out)
-        n_crystal = crystal_coords.shape[0]
-        n_docked = docked_coords.shape[0]
 
-        if n_crystal == n_docked:
+        if crystal_coords.shape[0] == docked_coords.shape[0]:
             rmsd = compute_rmsd(crystal_coords, docked_coords, align=False)
         else:
-            docked_mol = Chem.MolFromPDBBlock(
-                pose_out.read_text(encoding="utf-8", errors="replace"),
-                sanitize=True,
-                removeHs=True,
-            )
+            # --- NEW FIX: Clean PDBQT before RDKit parsing ---
+            clean_lines = []
+            for line in pose_out.read_text(encoding="utf-8", errors="replace").splitlines():
+                if line.startswith("ENDMDL"):
+                    break  # Stop after the best pose
+                if line.startswith(("ATOM", "HETATM")):
+                    # Reliably extract the element symbol from the atom name (columns 13-16 in PDB format)
+                    # Strip spaces and numbers (e.g., " O1 " -> "O", "C2" -> "C")
+                    atom_name = line[12:16].strip()
+                    element = "".join([c for c in atom_name if c.isalpha()])
+                    if not element:
+                        element = "C"  # Fallback safety
+                    
+                    # Pad the line to 76 chars, then add the correct element symbol right-justified
+                    clean_line = line[:76].ljust(76) + element.rjust(2)
+                    clean_lines.append(clean_line)
+                else:
+                    clean_lines.append(line)
+            
+            clean_pdb_block = "\n".join(clean_lines)
+            docked_mol = Chem.MolFromPDBBlock(clean_pdb_block, sanitize=True, removeHs=True)
+            
             if docked_mol is None or docked_mol.GetNumConformers() == 0:
                 raise AssertionError("Could not parse docked lactose pose for RMSD")
             rmsd = align_and_rmsd(crystal_mol, docked_mol)
 
-        self.logger.info(f"[validate] Lactose redock RMSD: {rmsd:.3f} Å")
-
         if rmsd >= self.config.rmsd_threshold_angstrom:
             raise AssertionError(
-                f"Receptor validation failed: lactose redock RMSD {rmsd:.3f} Å "
-                f">= {self.config.rmsd_threshold_angstrom:.1f} Å threshold"
+                f"Receptor validation failed: lactose redock RMSD {rmsd:.3f} A >= {self.config.rmsd_threshold_angstrom:.1f} A threshold"
             )
 
-        self.logger.info(
-            f"[OK] Receptor validation passed (RMSD {rmsd:.3f} Å < "
-            f"{self.config.rmsd_threshold_angstrom:.1f} Å)"
-        )
         return True
 
 
-def run_phase3_pipeline(
-    config: Optional[DockingConfig] = None,
-    validate: bool = True,
-) -> pd.DataFrame:
-    """
-    End-to-end Phase 3: prepare ligands → dock → merge scores → export CSV.
-
-    Parameters
-    ----------
-    config
-        Docking configuration; uses defaults if None.
-    validate
-        If True, run ``validate_receptor()`` before docking leads.
-
-    Returns
-    -------
-    pd.DataFrame
-        Merged results (also written to ``08_docking_results.csv``).
-    """
+def run_phase3_pipeline(config: Optional[DockingConfig] = None, validate: bool = True) -> pd.DataFrame:
     if config is None:
         config = DockingConfig(
             receptor_pdb=Path("data/docking/3ZSJ.pdb"),
-            receptor_pdbqt=Path("data/docking/3ZSJ.pdbqt"),
+            receptor_pdbqt=Path("data/docking/3ZSJ_clean.pdbqt"),
         )
 
     logger = configure_logging(log_file=config.output_dir / "phase3_docking.log")
@@ -889,9 +831,7 @@ def run_phase3_pipeline(
 
     lead_path = Path(config.lead_csv)
     if not lead_path.exists():
-        raise FileNotFoundError(
-            f"Lead file not found: {lead_path}. Run Phase 2 first."
-        )
+        raise FileNotFoundError(f"Lead file not found: {lead_path}. Run Phase 2 first.")
 
     leads = pd.read_csv(lead_path)
     scored = leads.copy()
@@ -899,29 +839,38 @@ def run_phase3_pipeline(
     docker = VinaDocking(config, logger=logger)
 
     if validate:
-        logger.info("\n--- Receptor validation (lactose redock) ---")
         docker.validate_receptor()
+    else:
+        logger.warning(
+            "Receptor validation skipped (validate=False). "
+            f"Grid centre is using configured values "
+            f"(X={config.center_x}, Y={config.center_y}, Z={config.center_z}). "
+            "If these are the DockingConfig defaults (10.0, 15.0, 5.0), your "
+            "docking box is almost certainly NOT centred on the 3ZSJ binding "
+            "site. Run with validate=True to auto-centre on the BGC-GAL crystal "
+            "ligand, or set explicit centre coordinates in DockingConfig."
+        )
 
-    logger.info("\n--- Ligand preparation ---")
+    # Record the grid centre actually used for provenance. This makes it
+    # possible to detect after the fact whether docking used the dynamic
+    # centre or the default, which previously caused unexplained score shifts.
+    logger.info(
+        f"[grid] Docking grid centre: "
+        f"X={config.center_x:.3f}  Y={config.center_y:.3f}  Z={config.center_z:.3f}  "
+        f"box={config.box_size:.1f} A^3"
+    )
+
     prepared = docker.prepare_ligands(leads)
-
-    logger.info("\n--- Vina docking ---")
     docked = docker.run_docking(prepared)
-
-    logger.info("\n--- Merge with lead scores ---")
     merged = docker.merge_with_lead_scores(docked, scored)
-
-    n_ok = (merged["docking_status"] == "dock_success").sum()
-    logger.info(f"\nDocking complete: {n_ok}/{len(merged)} compounds docked successfully")
-    logger.info("=" * 70)
     return merged
 
 
 if __name__ == "__main__":
     cfg = DockingConfig(
         receptor_pdb=Path("data/docking/3ZSJ.pdb"),
-        receptor_pdbqt=Path("data/docking/3ZSJ.pdbqt"),
-        # ADD THIS LINE BELOW (use your actual path, note the 'r' before the quotes)
-        vina_executable=r"C:\Users\adamh\Docking - Copy\vina.exe"
+        receptor_pdbqt=Path("data/docking/3ZSJ_clean.pdbqt"),
+        vina_executable=r"C:\\Users\\adamh\\Docking - Copy\\vina.exe",
     )
     run_phase3_pipeline(cfg)
+

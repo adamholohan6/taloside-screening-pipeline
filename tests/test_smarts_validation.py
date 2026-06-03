@@ -8,7 +8,6 @@ from taloside_pipeline.glycolibrary_generator import (
     GlycoLibraryGenerator,
     LibraryConfig,
     ReactionSMARTS,
-    infer_triazole_regioisomer,
 )
 
 from tests.constants import BUILDING_BLOCKS_MINI, SCAFFOLD
@@ -77,14 +76,6 @@ def test_cuaac_reaction_runs_on_scaffold_and_alkyne():
     rxn = AllChem.ReactionFromSmarts(ReactionSMARTS.TRIAZOLE_1_4_CuAAC["smarts"])
     products = rxn.RunReactants((scaffold_mol, alkyne_mol))
     assert len(products) >= 1
-
-
-@pytest.mark.unit
-def test_infer_triazole_regioisomer_patterns():
-    """Regioisomer inference heuristics must label known substructures."""
-    assert infer_triazole_regioisomer("N2[N+]=[N-]C=C2", fallback="") == "1,4-CuAAC"
-    assert infer_triazole_regioisomer("N2C=C([N-]=[N+]2", fallback="") == "1,5-RuAAC"
-    assert infer_triazole_regioisomer("unknown_smiles", fallback="fallback") == "fallback"
 
 
 @pytest.mark.unit

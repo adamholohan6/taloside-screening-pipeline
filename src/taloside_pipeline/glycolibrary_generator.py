@@ -136,19 +136,6 @@ def mol_to_inchikey(mol: Chem.Mol) -> Optional[str]:
         return None
 
 
-def infer_triazole_regioisomer(product_smiles: str, fallback: str = "") -> str:
-    """Infer triazole regioisomer from the product SMILES string."""
-    s = product_smiles.replace(" ", "")
-    if "N2[N+]=[N-]C=C2" in s or "[N+]=[N-]C=C2" in s:
-        return "1,4-CuAAC"
-    if "N2C=C(" in s and "[N-]=[N+]2" in s:
-        return "1,5-RuAAC"
-    if "C2=C[N-]=[N+]N2" in s:
-        return "1,4-CuAAC"
-    if "C2=CN(" in s:
-        return "1,5-RuAAC"
-    return fallback
-
 
 # ============================================================================
 # REACTION SMARTS DEFINITIONS
@@ -168,40 +155,57 @@ class ReactionSMARTS:
     """
 
     # CuAAC: exclusively 1,4-disubstituted triazole
+    # Product template pins ring N2 and N3 to NEUTRAL via explicit [N+0] markers.
+    # Rationale: formal charges from the azide reactant ([N+], [N-]) propagate
+    # into product atoms whose charge is left unspecified in the SMARTS (observed
+    # under RDKit 2026.03.x). The inherited [N-] then has bond-order sum = 3,
+    # which exceeds RDKit's permitted valence of 2 for N-, so SanitizeMol raises
+    # "Explicit valence for atom N, 3, is greater than permitted" and every
+    # product is dropped. The [N+0] markers are a required defense: they force
+    # neutrality at the template level rather than relying on it (the previous
+    # "all-Kekule with neutral atoms" comment was aspirational, not enforced).
+    # With neutral ring nitrogens, SanitizeMol perceives aromaticity from the
+    # electron count and produces clean, round-trippable canonical SMILES.
     TRIAZOLE_1_4_CuAAC = {
         "name": "triazole_1_4_CuAAC",
         "regioisomer": "1,4-CuAAC",
-        "smarts": "[N:1]=[N+:2]=[N-:3].[C:4]#[C:5]>>[C:4]1=[C:5]-[n:1]-[n+:2]=[n-:3]-1",
+        "smarts": "[N:1]=[N+:2]=[N-:3].[C:4]#[C:5]>>[C:4]1=[C:5][N:1][N+0:2]=[N+0:3]1",
         "description": (
             "CuAAC: 1,3-dipolar azide-alkyne cycloaddition giving the "
             "1,4-disubstituted 1,2,3-triazole exclusively. "
-            "C4 of alkyne bonds to C-4 of triazole (adjacent to N-1)."
+            "C4 of alkyne bonds to C-4 of triazole (adjacent to N-1). "
+            "Ring N2/N3 are pinned neutral with explicit [N+0] markers to stop "
+            "reactant azide charges propagating into the product; aromaticity is "
+            "then perceived by SanitizeMol from electron count."
         )
     }
 
     # RuAAC: exclusively 1,5-disubstituted triazole
+    # Same design as CuAAC: ring N2/N3 pinned neutral via explicit [N+0] markers
+    # to prevent reactant azide charge propagation into the product template.
     TRIAZOLE_1_5_RuAAC = {
         "name": "triazole_1_5_RuAAC",
         "regioisomer": "1,5-RuAAC",
-        "smarts": "[N:1]=[N+:2]=[N-:3].[C:4]#[C:5]>>[C:5]1=[C:4]-[n:3]-[n+:2]=[n-:1]-1",
+        "smarts": "[N:1]=[N+:2]=[N-:3].[C:4]#[C:5]>>[C:5]1=[C:4][N:1][N+0:2]=[N+0:3]1",
         "description": (
             "RuAAC: 1,3-dipolar azide-alkyne cycloaddition giving the "
             "1,5-disubstituted 1,2,3-triazole exclusively under Ru catalysis. "
-            "C5 of alkyne bonds to C-5 of triazole (adjacent to N-1)."
+            "C5 of alkyne bonds to C-5 of triazole (adjacent to N-1). "
+            "Ring N2/N3 are pinned neutral with explicit [N+0] markers, same "
+            "required defense against reactant charge propagation as CuAAC."
         )
     }
 
     # Convenience tuple: both regioisomers
     TRIAZOLE_BOTH = (TRIAZOLE_1_4_CuAAC, TRIAZOLE_1_5_RuAAC)
 
-    # Legacy alias retained for backwards compatibility - now deprecated
-    # This was the original single SMARTS that produced unlabelled regioisomers.
-    # DO NOT USE for new work; kept only so old scripts importing this attribute
-    # do not raise AttributeError. Will be removed in v3.0.
+    # Legacy alias retained for backwards compatibility - now deprecated.
+    # DO NOT USE for new work; use TRIAZOLE_1_4_CuAAC and TRIAZOLE_1_5_RuAAC.
+    # Will be removed in v3.0.
     TRIAZOLE_FORMATION = {
         "name": "triazole_formation_DEPRECATED",
         "regioisomer": "UNLABELLED",
-        "smarts": "[N:1]=[N+:2]=[N-:3].[C:4]#[C:5]>>[C:4]1=[C:5][n:1][n+:2]=[n-:3]1",
+        "smarts": "[N:1]=[N+:2]=[N-:3].[C:4]#[C:5]>>[C:4]1=[C:5][N:1][N:2]=[N:3]1",
         "description": (
             "DEPRECATED - produces unlabelled regioisomers. "
             "Use TRIAZOLE_1_4_CuAAC and TRIAZOLE_1_5_RuAAC instead."
@@ -319,31 +323,23 @@ class GlycoLibraryGenerator:
     def _sanitize_and_validate_product(
         self, product_mol: Chem.Mol, scaffold_id: str, bb_id: str
     ) -> Tuple[bool, Optional[str], Optional[str]]:
-        try:
-            Chem.SanitizeMol(product_mol, Chem.SANITIZE_ALL ^ Chem.SANITIZE_KEKULIZE)
-            try:
-                Chem.Kekulize(product_mol, clearAromaticFlags=True)
-            except Exception:
-                pass  # triazole kekulisation can fail; continue with aromatic form
-        except Exception as e:
-            try:
-                Chem.SanitizeMol(product_mol, Chem.SANITIZE_ALL ^ Chem.SANITIZE_KEKULIZE)
-            except Exception as e2:
-                return False, None, f"Sanitization failed: {e}"
+        """
+        Sanitize and validate a product molecule from RunReactants().
 
-        # Neutralize charges on triazole nitrogens to fix charge preservation issue
-        # RDKit preserves azide charges during reaction, causing invalid triazoles
-        # Only neutralize nitrogens in 5-membered rings with 3 nitrogens (triazoles)
-        # Do this AFTER sanitization to preserve aromaticity perception
-        for ring in Chem.GetSymmSSSR(product_mol):
-            if len(ring) == 5:
-                n_count = sum(1 for idx in ring if product_mol.GetAtomWithIdx(idx).GetSymbol() == "N")
-                c_count = sum(1 for idx in ring if product_mol.GetAtomWithIdx(idx).GetSymbol() == "C")
-                if n_count == 3 and c_count == 2:
-                    for idx in ring:
-                        atom = product_mol.GetAtomWithIdx(idx)
-                        if atom.GetSymbol() == "N":
-                            atom.SetFormalCharge(0)
+        With the corrected all-Kekule product SMARTS (uppercase atoms, no formal
+        charges on ring nitrogens), standard SanitizeMol correctly perceives
+        triazole aromaticity from the electron count and produces clean,
+        round-trippable SMILES.
+
+        Note: the aggressive ring-nitrogen repair loop that previously preceded
+        SanitizeMol has been removed. It was only needed to mask broken product
+        SMARTS that included aromatic atoms or formal charges in the product
+        template. With clean SMARTS, no pre-sanitization repair is needed.
+        """
+        try:
+            Chem.SanitizeMol(product_mol)
+        except Exception as e:
+            return False, None, f"Sanitization failed: {e}"
 
         mol_wt = Descriptors.MolWt(product_mol)
         if not (self.config.min_product_mw <= mol_wt <= self.config.max_product_mw):
@@ -376,6 +372,34 @@ class GlycoLibraryGenerator:
 
         seen_inchikeys: Set[str] = set()
         product_count = 0
+
+        # Pre-compile triazole geometry-filter patterns.
+        #
+        # [C:4]#[C:5] in the reaction SMARTS matches a terminal alkyne in BOTH
+        # orientations (terminal-C as :4 or as :5), so RunReactants produces two
+        # products per building block even though each catalyst gives only one
+        # regioisomer in practice:
+        #
+        #   CuAAC → 1,4-disubstituted: aryl lands on C4 (two atoms from N1)
+        #   RuAAC → 1,5-disubstituted: aryl lands on C5 (adjacent to N1)
+        #
+        # The patterns below match the N1-bearing-scaffold path around the ring
+        # to the aryl-bearing carbon:
+        #
+        #   _pat_14: [#6]-N1-N2-N3-C4(aryl)-C5 (aryl on C4 → 1,4)
+        #   _pat_15: [#6]-N1-N2-N3-C4-C5(aryl) (aryl on C5 → 1,5)
+        #
+        # Products whose geometry doesn't match the template label are routed to
+        # failed_products with reason 'geometry_mismatch'. This makes the library
+        # contents honest: every compound labelled 1,4-CuAAC actually has 1,4
+        # topology, and every 1,5-RuAAC compound actually has 1,5 topology.
+        _pat_14 = Chem.MolFromSmarts("[#6][n]1[n][n][c]([c])[c]1")  # aryl on C4
+        _pat_15 = Chem.MolFromSmarts("[#6][n]1[n][n][c][c]1[c]")    # aryl on C5
+        _do_geometry_filter = (
+            self.regioisomer_label in ("1,4-CuAAC", "1,5-RuAAC")
+            and _pat_14 is not None
+            and _pat_15 is not None
+        )
 
         for bb_idx, bb in enumerate(self.building_blocks, 1):
             if product_count >= self.config.max_products:
@@ -456,10 +480,56 @@ class GlycoLibraryGenerator:
                         self.logger.warning(f"Descriptor calculation failed for {bb_id}: {e}")
                         continue
 
-                    compound_id = f"SCAF-001_{bb_id}_{bb_product_count + 1}"
-                    regioisomer = infer_triazole_regioisomer(product_smiles, fallback=self.regioisomer_label)
-                    if regioisomer == self.regioisomer_label and self.regioisomer_label in {"1,4-CuAAC", "1,5-RuAAC"}:
-                        regioisomer = "1,4-CuAAC" if prod_idx == 0 else "1,5-RuAAC"
+                    # Geometry filter: discard products whose triazole ring topology
+                    # doesn't match the template's expected regiochemistry.
+                    if _do_geometry_filter:
+                        _check = Chem.MolFromSmiles(std_smiles)
+                        if _check is not None:
+                            _is_14 = _check.HasSubstructMatch(_pat_14)
+                            _is_15 = _check.HasSubstructMatch(_pat_15)
+                            _keep = (
+                                (self.regioisomer_label == "1,4-CuAAC" and _is_14) or
+                                (self.regioisomer_label == "1,5-RuAAC" and _is_15)
+                            )
+                            if not _keep:
+                                _actual = (
+                                    "1,5" if _is_15 else
+                                    "1,4" if _is_14 else
+                                    "unknown"
+                                )
+                                self.failed_products.append({
+                                    'building_block_id': bb_id,
+                                    'failure_reason': (
+                                        f"geometry_mismatch: expected "
+                                        f"{self.regioisomer_label}, product has "
+                                        f"{_actual} topology (wrong alkyne orientation)"
+                                    )
+                                })
+                                continue
+
+                    # Build a regioisomer-unique compound ID.
+                    # Each building block can produce more than one product per
+                    # reaction run (e.g. both alkyne orientations match [C:4]#[C:5]),
+                    # so we need BOTH a regioisomer tag AND a per-product counter to
+                    # guarantee globally unique IDs. Without the regioisomer tag, the
+                    # CuAAC and RuAAC runs both emit SCAF-001_<bb>_1 and the
+                    # lead-score merge produces a many-to-many Cartesian explosion.
+                    _regio_suffix_map = {
+                        "1,4-CuAAC": "CuAAC",
+                        "1,5-RuAAC": "RuAAC",
+                    }
+                    _regio_tag = _regio_suffix_map.get(self.regioisomer_label)
+                    if _regio_tag is not None:
+                        # triazole reactions: <bb>_<CuAAC|RuAAC>_<n>
+                        compound_id = f"SCAF-001_{bb_id}_{_regio_tag}_{bb_product_count + 1}"
+                    else:
+                        # non-triazole reactions: preserve original numeric-only format
+                        compound_id = f"SCAF-001_{bb_id}_{bb_product_count + 1}"
+                    # The regioisomer label comes from the reaction template used to
+                    # produce this compound. Each GlycoLibraryGenerator instance
+                    # runs exactly one template (CuAAC or RuAAC), so the label is
+                    # authoritative at the generator level.
+                    regioisomer = self.regioisomer_label
 
                     self.products.append({
                         'compound_id':        compound_id,
@@ -540,4 +610,29 @@ def generate_triazole_library(
 
 
 if __name__ == "__main__":
-    pass
+    # 1. Define a dummy core scaffold with an azide group
+    test_scaffold = "CC(N=[N+]=[N-])C1=CC=CC=C1" 
+    
+    # 2. Define a couple of test building blocks (alkynes)
+    test_bbs = [
+        {'id': 'BB-001', 'smiles': 'C#CC1=CC=CC=C1'},  # Phenylacetylene
+        {'id': 'BB-002', 'smiles': 'C#CCO'}            # Propargyl alcohol
+    ]
+    
+    # 3. Run the generator
+    print("Starting test run...")
+    df = generate_triazole_library(
+        scaffold_smiles=test_scaffold,
+        building_blocks=test_bbs
+    )
+    
+    # 4. Print the results
+    print("\n--- TEST RESULTS ---")
+    if not df.empty:
+        print(df[['compound_id', 'regioisomer', 'product_smiles']])
+        
+        # ADD THIS LINE TO SAVE:
+        df.to_csv("my_generated_library.csv", index=False)
+        print("\n[SUCCESS] Library saved to 'my_generated_library.csv'")
+    else:
+        print("No products generated. Check RDKit valency errors.")
