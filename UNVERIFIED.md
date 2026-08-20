@@ -97,25 +97,37 @@ only statistically. Adding `--seed` to the Vina invocation would make Phase 3
 deterministic; this has not been changed here because it would alter the
 published numbers.
 
-## 6. Phase 3 numbers are carried over, not re-verified
+## 6. Phase 3 re-run corroborates the published scores, but raw-Vina rank order is not stable
 
-The 14 Vina scores in `phase3_output/08_docking_results.csv` (−6.14 to −4.98
-kcal/mol) date from the run of 2026-06-03 and were **not** regenerated during
-the v2.2.0 cleanup. A full re-run into a scratch directory was attempted twice
-and was terminated by the execution environment before completing.
+The full 14-compound Phase 3 docking was re-run on 2026-08-20 (Vina 1.2.7,
+Open Babel 3.1.1, grid centre X=-20.98 Y=8.88 Z=-1.00, exhaustiveness 8) and
+compared against the published `phase3_output/08_docking_results.csv` from
+2026-06-03.
 
-The surrounding conditions were verified: Vina 1.2.7 and Open Babel 3.1.1 are
-installed and working, a single ligand docks successfully (−5.817 kcal/mol),
-and all 14 ligand PDBQTs pass `validate_ligand_pdbqt()`. Only the end-to-end
-run is outstanding. Because of §5 above it could in any case only corroborate,
-never bit-reproduce, the published values.
+| Statistic | Value |
+|---|---|
+| Compounds docked | 14 / 14 |
+| Mean absolute difference | **0.099 kcal/mol** |
+| Maximum absolute difference | 0.326 kcal/mol |
+| Pearson correlation | **0.908** |
+| Published range | -6.138 to -4.976 (span 1.162) |
+| Re-run range | -6.329 to -4.968 (span 1.361) |
 
-To attempt it:
+**Combined-score ranking is stable.** The top five by combined score are
+identical in both set *and* order, and rank 1
+(`SCAF-001_BB-004-4F_CuAAC_1`) is unchanged. This is the ranking the manuscript's
+conclusions rest on.
 
-```bash
-# with vina and obabel on PATH
-python -m taloside_pipeline.phase3_docking
-```
+**Raw-Vina ranking is not stable.** The top five by raw Vina score differ
+between runs. `SCAF-001_BB-007-Pyridine_CuAAC_1` moves from 2nd (-6.008) to 7th
+(-5.682, a +0.326 shift) while `SCAF-001_BB-001-Ph_CuAAC_1` rises into the top
+five (-5.728 -> -5.965). Any statement that depends on raw-Vina rank order
+should be read as one sample, not a reproducible ordering.
+
+Both observations follow from §5: Vina is unseeded. The published values are
+corroborated to within ~0.1 kcal/mol on average, which is the right standard for
+an unseeded search, but they are not bit-reproducible and the published table has
+deliberately been left in place rather than replaced with a second sample.
 
 ---
 
