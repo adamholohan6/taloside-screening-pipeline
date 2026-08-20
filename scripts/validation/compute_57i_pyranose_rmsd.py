@@ -12,16 +12,12 @@ Reported values (manuscript §3.4):
     pyranose RMSD, direct            2.17 A
     pyranose RMSD, Kabsch-aligned    0.48 A   <- value quoted in the manuscript
 
-Inputs live under data/docking/, which is intentionally excluded from version
-control (see .gitignore). Fetch the two crystal structures from the RCSB before
-running:
+The redocked pose (data/docking/7RGX_57I_docked.pdbqt) is committed, so this
+check needs neither AutoDock Vina nor a Phase 3 rerun. The two crystal
+structures are public RCSB entries and are not tracked; fetch them first:
 
     curl -o data/docking/3ZSJ.pdb https://files.rcsb.org/download/3ZSJ.pdb
     curl -o data/docking/7RGX.pdb https://files.rcsb.org/download/7RGX.pdb
-
-The redocked pose (7RGX_57I_docked.pdbqt) is produced by the Phase 3 docking run:
-
-    python -m taloside_pipeline.phase3_docking
 
 Usage:
     python scripts/validation/compute_57i_pyranose_rmsd.py

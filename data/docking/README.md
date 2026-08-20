@@ -8,14 +8,19 @@ Place prepared receptor files here before running Phase 3:
 | `3ZSJ.pdbqt` | Prepared receptor in AutoDock PDBQT format |
 | `3ZSJ_clean.pdbqt` | Apo receptor used for the clean Phase 3 rerun |
 | `7RGX.pdb` | Crystal structure carrying the 57I ligand (pyranose-ring validation) |
-| `7RGX_57I_docked.pdbqt` | Redocked 57I pose, written by the Phase 3 run |
+| `7RGX_57I_docked.pdbqt` | Redocked 57I pose (tracked in this repository) |
 
-The crystal structures are not tracked in this repository. Fetch them from the RCSB:
+`data/` is otherwise excluded from version control. The crystal structures are
+public RCSB entries, so fetch them directly:
 
 ```bash
 curl -o data/docking/3ZSJ.pdb https://files.rcsb.org/download/3ZSJ.pdb
 curl -o data/docking/7RGX.pdb https://files.rcsb.org/download/7RGX.pdb
 ```
+
+`7RGX_57I_docked.pdbqt` is the one exception: it is a Phase 3 output rather than
+a public file, and it is committed so that the pyranose-ring RMSD reported in the
+manuscript can be checked without installing AutoDock Vina or rerunning docking.
 
 ## Quick start
 
