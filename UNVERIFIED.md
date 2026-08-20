@@ -93,9 +93,14 @@ embedding *is* seeded (`embed_ligand_3d(..., random_seed=42)`), but Vina's Monte
 Carlo search is not, so Vina scores are not bit-reproducible between runs.
 
 This means the published `08_docking_results.csv` cannot be reproduced exactly,
-only statistically. Adding `--seed` to the Vina invocation would make Phase 3
-deterministic; this has not been changed here because it would alter the
-published numbers.
+only statistically.
+
+`DockingConfig.seed` now exists for this: leave it at its `None` default and the
+Vina command is byte-identical to the one that produced the published table; set
+it to an integer and `--seed` is passed, making Phase 3 deterministic. The
+default is deliberately unseeded so that the published numbers remain the output
+of the pipeline's default configuration. The seed actually used is recorded in
+`phase3_docking.log` on the `[seed]` line.
 
 ## 6. Phase 3 re-run corroborates the published scores, but raw-Vina rank order is not stable
 
@@ -159,6 +164,6 @@ the 2.0 Å threshold, so both pass validation.
 This is the unseeded behaviour of §5 made concrete: Vina draws a fresh random
 seed per invocation, so the lactose redock lands on a different pose each time
 and the validation RMSD moves with it. The manuscript's 1.2 Å is therefore one
-sample, not a reproducible constant. Adding `--seed` to the Vina invocation
-would fix this; it has not been changed here because it would alter the
-published numbers.
+sample, not a reproducible constant. Setting `DockingConfig.seed` pins it; the
+default remains unseeded so the published numbers stay the default-configuration
+output (see section 5).
