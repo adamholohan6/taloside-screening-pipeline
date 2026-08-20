@@ -213,8 +213,48 @@ the wrong place with the right internal geometry still scores well and still
 passes the 2.0 Å threshold. What the fallback branch changes is not how the
 pose is parsed but what is being measured.
 
-This has not been changed here because correcting it would alter a published
-validation number (§2.7, §3.4, Figure S3), which is the author's decision. Note
-that an in-place RMSD is always greater than or equal to the aligned RMSD, so
-the corrected figure would be **larger** than 1.727 Å, not smaller -- and the
-manuscript's 1.2 Å is smaller still, so §8 does not explain §7 either.
+### What the placement metric actually gives
+
+Measured 2026-08-20, clean receptor, `seed=42`, all three returned poses:
+
+| Pose | Vina score | Aligned RMSD (reported) | In-place RMSD | Centroid offset |
+|---|---|---|---|---|
+| 1 (top) | -4.589 | 1.716 Å | **7.854 Å** | 5.38 Å |
+| 2 | -4.471 | 1.921 Å | 8.335 Å | 6.36 Å |
+| 3 | -4.440 | **1.319 Å** | 8.732 Å | 7.04 Å |
+
+Centroid offset is mapping-free and corroborates the in-place figures
+independently of any substructure match: the crystal ligand's own maximum
+internal span is 10.20 Å, so a 5.4 Å centroid displacement moves the pose more
+than half its own length off the crystallographic site.
+
+Two consequences:
+
+1. **The redock does not reproduce the crystallographic binding mode.** The top
+   pose sits 7.85 Å away in place. It passes the 2.0 Å threshold only because
+   the reported metric superposes the pose onto the crystal first, which
+   discards exactly the displacement being tested.
+2. **The reported metric is anti-correlated with placement here.** Pose 3 is the
+   furthest from the site (7.04 Å centroid offset) yet returns the *lowest*
+   aligned RMSD of the three. Ranking poses by this number selects against
+   correct placement.
+
+Against the contaminated receptor the same run gives aligned 1.536 Å with an
+8.65 Å centroid offset, so this is not an artefact of receptor preparation.
+
+### Probable origin of the manuscript's 1.2 Å
+
+Pose 3 returns **1.319 Å** by the reported metric. A value near 1.2 Å is
+therefore reachable as the aligned RMSD of a non-top pose, or as the minimum
+across returned poses, rather than the top pose's. This is consistent with the
+manuscript's figure but is **inference, not a reproduction** -- the exact
+configuration that produced 1.2 Å has not been recovered. What is established
+is that 1.2 Å cannot be a placement RMSD, since every pose measured is above
+7.8 Å in place.
+
+Nothing here has been changed in the pipeline, because correcting the metric
+would move a published validation number (§2.7, §3.4, Figure S3) and that is the
+author's decision. But the claim the number is used to support -- that docking
+reproduces the crystallographic lactose pose, and that the grid and receptor
+preparation are therefore validated -- is not supported by the current
+measurement, and this should be resolved before submission.
