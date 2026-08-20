@@ -135,3 +135,18 @@ Recorded here so they are not re-investigated:
 | Open Babel 3.1.1 | ✅ `obabel -V` |
 | Zenodo concept DOI 10.5281/zenodo.20476421 | ✅ confirmed via API |
 | Committed `phase2_output/*.csv` | ✅ bit-identical to a clean rerun |
+
+---
+
+## 7. Lactose redocking RMSD varies between runs (measured)
+
+A partial re-run on 2026-08-20 completed the lactose validation redock and gave
+**RMSD = 1.737 Å**, against the 1.2 Å reported in the manuscript. Both are below
+the 2.0 Å threshold, so both pass validation.
+
+This is the unseeded behaviour of §5 made concrete: Vina draws a fresh random
+seed per invocation, so the lactose redock lands on a different pose each time
+and the validation RMSD moves with it. The manuscript's 1.2 Å is therefore one
+sample, not a reproducible constant. Adding `--seed` to the Vina invocation
+would fix this; it has not been changed here because it would alter the
+published numbers.

@@ -63,4 +63,3 @@ src/**/*.png
 *.egg-info/
 build/
 dist/
-figures/figureS1_pose_overlay.png
