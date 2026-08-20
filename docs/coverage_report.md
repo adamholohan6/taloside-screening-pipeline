@@ -68,5 +68,11 @@ pip install pytest pytest-cov
 pytest --cov=src --cov-report=term-missing
 ```
 
+The 53/69% figures above assume Open Babel is on `PATH` and the receptor
+structures are present under `data/docking/`.
+
 CI runs the same suite on Python 3.10, 3.12 and 3.14 via
-`.github/workflows/tests.yml` (excluding tests marked `slow`).
+`.github/workflows/tests.yml` (excluding tests marked `slow`). Runners have
+neither Open Babel nor the untracked receptor structures, so nine Phase 3 tests
+skip there and CI reports **43 passed, 9 skipped, 48% coverage**. The lower
+coverage is the skipped Phase 3 paths, not a regression.

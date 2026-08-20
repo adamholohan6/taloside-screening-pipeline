@@ -1,5 +1,12 @@
-"""Unit tests for phase3_docking (no Vina executable required)."""
+"""Tests for phase3_docking (no Vina executable required).
 
+Some tests here still need Open Babel on PATH, or the receptor structures under
+data/docking/, which are excluded from version control. Those are skipped rather
+than failed when the dependency is absent, so the suite is meaningful on a clean
+checkout and in CI.
+"""
+
+import shutil
 from pathlib import Path
 from unittest import mock
 
@@ -17,6 +24,17 @@ from taloside_pipeline.phase3_docking import (
     mol_to_pdbqt_string,
     parse_vina_affinity,
     validate_ligand_pdbqt,
+)
+
+
+requires_obabel = pytest.mark.skipif(
+    shutil.which("obabel") is None,
+    reason="Open Babel (obabel) not on PATH; required for ligand PDBQT preparation",
+)
+
+requires_receptor_data = pytest.mark.skipif(
+    not Path("data/docking/3ZSJ.pdb").exists(),
+    reason="data/docking/ receptor structures are not tracked; fetch 3ZSJ from the RCSB",
 )
 
 
@@ -73,6 +91,7 @@ def test_minmax_normalize_invert():
     assert norm.iloc[1] == pytest.approx(0.0)
 
 
+@requires_obabel
 @pytest.mark.unit
 def test_embed_and_pdbqt_benzene():
     mol = Chem.MolFromSmiles("c1ccccc1")
@@ -85,11 +104,13 @@ def test_embed_and_pdbqt_benzene():
     assert "ATOM" in pdbqt
 
 
+@requires_receptor_data
 @pytest.mark.unit
 def test_clean_receptor_is_clean(clean_receptor_pdbqt):
     assert_clean_receptor_pdbqt(clean_receptor_pdbqt)
 
 
+@requires_receptor_data
 @pytest.mark.unit
 def test_contaminated_receptor_is_rejected():
     receptor = Path("data/docking/3ZSJ.pdbqt")
@@ -97,6 +118,7 @@ def test_contaminated_receptor_is_rejected():
         assert_clean_receptor_pdbqt(receptor)
 
 
+@requires_obabel
 @pytest.mark.unit
 def test_ligand_pdbqt_has_charges_and_torsions(tmp_path):
     """Open Babel must produce a PDBQT with non-zero Gasteiger charges and TORSDOF."""
@@ -133,6 +155,7 @@ def test_all_zero_charge_pdbqt_is_rejected(tmp_path):
         validate_ligand_pdbqt(pdbqt)
 
 
+@requires_receptor_data
 @pytest.mark.unit
 def test_validation_extracts_full_bgc_gal():
     coords, mol = extract_ligand_coords_from_pdb(Path("data/docking/3ZSJ.pdb"))
@@ -140,6 +163,7 @@ def test_validation_extracts_full_bgc_gal():
     assert mol.GetNumAtoms() == 23
 
 
+@requires_obabel
 @pytest.mark.unit
 def test_prepare_ligands_marks_failures(docking_config, mini_lead_df):
     docker = VinaDocking(docking_config)
@@ -149,6 +173,7 @@ def test_prepare_ligands_marks_failures(docking_config, mini_lead_df):
     assert Path(prepared.loc[0, "ligand_pdbqt"]).exists()
 
 
+@requires_obabel
 @pytest.mark.unit
 def test_merge_combined_score_formula(docking_config):
     docker = VinaDocking(docking_config)
@@ -171,6 +196,7 @@ def test_merge_combined_score_formula(docking_config):
     assert out.exists()
 
 
+@requires_obabel
 @pytest.mark.unit
 def test_run_docking_mock_vina(docking_config, mini_lead_df):
     docker = VinaDocking(docking_config)
@@ -201,6 +227,7 @@ def test_compute_rmsd_identical():
     assert compute_rmsd(arr, arr) == pytest.approx(0.0, abs=1e-6)
 
 
+@requires_obabel
 @pytest.mark.unit
 def test_validate_receptor_asserts_high_rmsd(docking_config):
     """Validation must raise when redock RMSD exceeds the 2.0 Å threshold."""

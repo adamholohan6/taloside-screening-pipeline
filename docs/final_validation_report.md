@@ -21,9 +21,16 @@ in [`UNVERIFIED.md`](../UNVERIFIED.md) rather than being quietly adjusted.
 | Open Babel | Phase 3 | **3.1.1** | SI Note S1 claim |
 | BioPython | validation script | 1.87 | — |
 
-Vina and Open Babel are installed but not on `PATH`; both were invoked by
-absolute path. The Vina and Open Babel version claims were previously listed as
-unverified and are now confirmed.
+Open Babel is on `PATH` (`C:\Program Files\OpenBabel-3.1.1\obabel.EXE`); Vina is
+not, and was invoked by absolute path. The Vina and Open Babel version claims
+were previously listed as unverified and are now confirmed.
+
+Nine Phase 3 tests need the Open Babel binary or the untracked receptor
+structures under `data/docking/`. They were marked `unit` but are not unit tests,
+so `pytest -m unit` failed on any clean checkout — which is exactly what CI
+surfaced on its first run. They now carry `skipif` guards keyed to actual
+availability, so they run where the dependencies exist and skip visibly where
+they do not.
 
 ## 2. Test suite
 

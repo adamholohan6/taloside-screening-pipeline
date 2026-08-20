@@ -30,7 +30,10 @@ jobs:
           python -m pip install -e .
           python -m pip install pytest pytest-cov
 
-      # Phases 1 and 2 are pure RDKit. Phase 3 needs AutoDock Vina and Open
-      # Babel, which are not installed here, so its tests mock the subprocess.
+      # Phases 1 and 2 are pure RDKit and run fully here. Phase 3 tests that
+      # need the Open Babel binary, or the receptor structures under
+      # data/docking/ (not tracked), skip themselves via the guards in
+      # tests/test_phase3_docking.py. Vina itself is never invoked: the one
+      # docking test mocks the subprocess.
       - name: Run test suite
-        run: pytest -m "not slow" --cov=src --cov-report=term-missing
+        run: pytest -m "not slow" --cov=src --cov-report=term-missing -rs
