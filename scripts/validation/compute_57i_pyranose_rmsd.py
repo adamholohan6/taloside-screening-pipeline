@@ -164,7 +164,7 @@ def main():
     print("=" * 72)
     print(f"  Pyranose RMSD, direct           {rmsd_direct:.2f} A")
     print(f"  Pyranose RMSD, Kabsch-aligned   {rmsd_kabsch:.2f} A")
-    print(f"  Manuscript value (§3.4)         {MANUSCRIPT_RMSD:.2f} A")
+    print(f"  Manuscript value (sec. 3.4)     {MANUSCRIPT_RMSD:.2f} A")
 
     delta = abs(rmsd_kabsch - MANUSCRIPT_RMSD)
     if delta <= TOLERANCE:
