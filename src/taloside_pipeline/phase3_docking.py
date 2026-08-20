@@ -816,6 +816,14 @@ STDERR:
                 raise AssertionError("Could not parse docked lactose pose for RMSD")
             rmsd = align_and_rmsd(crystal_mol, docked_mol)
 
+        # Record the measured value, not just pass/fail. Under an unseeded Vina
+        # this RMSD is a per-run sample (UNVERIFIED.md section 7), so a run that
+        # only reports "passed" hides how close to the threshold it landed.
+        self.logger.info(
+            f"[validate] Lactose redock RMSD: {rmsd:.3f} A "
+            f"(threshold {self.config.rmsd_threshold_angstrom:.1f} A)"
+        )
+
         if rmsd >= self.config.rmsd_threshold_angstrom:
             raise AssertionError(
                 f"Receptor validation failed: lactose redock RMSD {rmsd:.3f} A >= {self.config.rmsd_threshold_angstrom:.1f} A threshold"

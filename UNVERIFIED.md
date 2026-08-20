@@ -168,15 +168,53 @@ Recorded here so they are not re-investigated:
 
 ---
 
-## 7. Lactose redocking RMSD varies between runs (measured)
+## 7. Lactose redocking RMSD does NOT match the manuscript, and stochasticity does not explain it
 
-A partial re-run on 2026-08-20 completed the lactose validation redock and gave
-**RMSD = 1.737 Å**, against the 1.2 Å reported in the manuscript. Both are below
-the 2.0 Å threshold, so both pass validation.
+A re-run on 2026-08-20 gave **RMSD = 1.737 Å** against the 1.2 Å reported in the
+manuscript (§2.7, §3.4, Figure S3). Both are below the 2.0 Å threshold, so both
+pass validation.
 
-This is the unseeded behaviour of §5 made concrete: Vina draws a fresh random
-seed per invocation, so the lactose redock lands on a different pose each time
-and the validation RMSD moves with it. The manuscript's 1.2 Å is therefore one
-sample, not a reproducible constant. Setting `DockingConfig.seed` pins it; the
-default remains unseeded so the published numbers stay the default-configuration
-output (see section 5).
+An earlier version of this section attributed the gap to §5 (unseeded Vina).
+**That explanation is wrong.** Measuring the distribution directly, five
+independent unseeded runs:
+
+| Run | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|
+| RMSD (Å) | 1.726 | 1.715 | 1.740 | 1.723 | 1.731 |
+
+Mean **1.727 Å**, SD **0.009 Å**, range 1.715-1.740 Å. With `seed=42` two runs
+both give 1.716 Å exactly.
+
+The run-to-run spread is therefore about 0.009 Å, roughly fifty times too small
+to account for a 0.5 Å discrepancy. The redock RMSD is in practice a stable
+quantity, and **the manuscript's 1.2 Å is not reproduced by the current
+pipeline.** The cause is unidentified. Candidates not yet excluded: a different
+receptor or ligand preparation than the one committed here, a different atom
+subset (compare the pyranose-only 0.48 Å in the verified table), or a value
+carried over from an earlier configuration. This should be resolved before
+submission, since it is a number a reviewer can check directly.
+
+## 8. The lactose validation reports a superposition RMSD, not a placement RMSD
+
+`validate_receptor()` picks its RMSD metric by atom count:
+
+* counts equal -> `compute_rmsd(..., align=False)`, an in-place RMSD in the
+  binding-site frame, which is the correct redocking-validation metric
+* counts differ -> `align_and_rmsd()`, which calls `rdMolAlign.AlignMol` and so
+  **superposes the docked pose onto the crystal pose before measuring**
+
+In practice the second branch always runs: the crystal ligand has 23 heavy
+atoms, while the Open Babel PDBQT pose carries 31 (lactose's 8 hydroxyl
+hydrogens are retained as polar H). Verified on 2026-08-20.
+
+Superposition removes the translation and rotation that redocking validation
+exists to test, so the reported figure is systematically optimistic: a pose in
+the wrong place with the right internal geometry still scores well and still
+passes the 2.0 Å threshold. What the fallback branch changes is not how the
+pose is parsed but what is being measured.
+
+This has not been changed here because correcting it would alter a published
+validation number (§2.7, §3.4, Figure S3), which is the author's decision. Note
+that an in-place RMSD is always greater than or equal to the aligned RMSD, so
+the corrected figure would be **larger** than 1.727 Å, not smaller -- and the
+manuscript's 1.2 Å is smaller still, so §8 does not explain §7 either.

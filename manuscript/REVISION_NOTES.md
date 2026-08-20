@@ -188,7 +188,7 @@ wrong, and z was blank.
 
 | Claim | Why left alone |
 |---|---|
-| Lactose redocking RMSD = 1.2 Å (§2.7, §3.4, Figure S3) | Since re-run: measured **1.737 Å** on 2026-08-20, against 1.2 Å in the manuscript. Both pass the 2.0 Å threshold, so validation holds either way, but the value is a per-run sample rather than a constant because Vina is unseeded. Left unchanged pending a decision on how to report it. See `UNVERIFIED.md` §7. |
+| Lactose redocking RMSD = 1.2 Å (§2.7, §3.4, Figure S3) | **Not reproduced.** Five independent runs give 1.727 ± 0.009 Å; the value is stable, so run-to-run variation does not explain the 0.5 Å gap. Cause unidentified. Separately, the metric itself is a superposition RMSD rather than an in-place one, which makes it optimistic. Both pass the 2.0 Å threshold. Needs resolving before submission. See `UNVERIFIED.md` §7 and §8. |
 | 57I pyranose RMSD = 0.48 Å (§2.7, §3.4) | Re-verified as correct — `scripts/validation/compute_57i_pyranose_rmsd.py` exits 0 reproducing 0.48 Å. No change needed. |
 | Vina scores, combined scores, Tables 1/2/S2 rankings | Phase 3 has since been re-run in full, 14/14 (see `UNVERIFIED.md` §6): mean \|Δ\| 0.099 kcal/mol, r = 0.908, combined-score top five identical in set and order. Carried over unchanged rather than replaced with a second unseeded sample. Raw-Vina rank order is **not** stable between runs. |
 | Cα RMSD 0.275 Å, exhaustiveness sensitivity (Table S4) | Cα RMSD re-verified as correct. Table S4 not re-run. |
