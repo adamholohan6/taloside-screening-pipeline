@@ -1,107 +1,72 @@
-# Coverage Report
+# Test coverage report
 
-**Generated:** 2026-05-31  
-**Command:** `py -3.14 -m pytest --cov=src --cov-report=term-missing --cov-report=html`  
-**Environment:** Python 3.14.5, pytest 9.0.3, pytest-cov 7.1.0, RDKit (via pip)
+**Generated:** 2026-08-20 (v2.2.0)
+**Command:** `pytest --cov=src --cov-report=term-missing`
+**Environment:** Python 3.14.5, RDKit 2026.03.2, Windows (win32)
+
+This report is produced from an actual run. The previous version of this file
+was dated 2026-05-31, predated the June 2026 bug fixes, and reported 40 tests.
 
 ---
 
 ## Summary
 
-| Metric | Before Priority 2 | After Priority 2 | Change |
-|--------|-------------------|------------------|--------|
-| **Total tests** | 11 | **40** | +29 |
-| **Overall coverage** | 49% | **79%** | +30 pp |
-| **`phase2_integration.py`** | 12% | **88%** | +76 pp |
-| **`glycolibrary_generator.py`** | 72% | **74%** | +2 pp |
-| **`descriptor_calculator.py`** | 67% | **67%** | — |
+| Metric | Value |
+|---|---|
+| Tests collected | **53** |
+| Tests passed | **53** |
+| Tests failed | 0 |
+| Overall statement coverage | **69%** |
+| Statements | 1023 |
+| Statements missed | 314 |
 
-**Result:** 40 passed, 0 failed, 0 skipped (8.33 s)
+## Per-module coverage
 
----
+| Module | Stmts | Miss | Cover |
+|---|---:|---:|---:|
+| `src/__init__.py` | 0 | 0 | 100% |
+| `src/taloside_pipeline/__init__.py` | 8 | 0 | 100% |
+| `src/taloside_pipeline/library_generator.py` | 1 | 0 | 100% |
+| `src/taloside_pipeline/phase2_integration.py` | 211 | 24 | **89%** |
+| `src/taloside_pipeline/glycolibrary_generator.py` | 249 | 72 | 71% |
+| `src/taloside_pipeline/descriptor_calculator.py` | 65 | 21 | 68% |
+| `src/taloside_pipeline/phase3_docking.py` | 489 | 197 | 60% |
+| **TOTAL** | **1023** | **314** | **69%** |
 
-## Coverage by Module
+## Test distribution by marker
 
-| Module | Statements | Missed | Coverage | Notes |
-|--------|------------|--------|----------|-------|
-| `src/__init__.py` | 0 | 0 | **100%** | Empty stub |
-| `src/taloside_pipeline/__init__.py` | 7 | 0 | **100%** | Public API exports |
-| `src/taloside_pipeline/library_generator.py` | 1 | 0 | **100%** | Compatibility re-export |
-| `src/taloside_pipeline/phase2_integration.py` | 188 | 22 | **88%** | Lipinski, PAINS, lead score, pipeline |
-| `src/taloside_pipeline/glycolibrary_generator.py` | 243 | 64 | **74%** | Library generation engine |
-| `src/taloside_pipeline/descriptor_calculator.py` | 63 | 21 | **67%** | Phase 1 descriptor CLI |
-| **TOTAL** | **502** | **107** | **79%** | |
+| Marker | Count |
+|---|---:|
+| `unit` | 31 |
+| `smoke` | 3 |
+| `integration` | 3 |
+| `slow` | 1 |
 
-HTML report: `htmlcov/index.html`  
-JSON report: `coverage.json`
+## Why `phase3_docking.py` sits lowest
 
----
+At 60% it is the least-covered module, which is expected: most of its
+uncovered lines are the AutoDock Vina and Open Babel subprocess paths. The unit
+tests mock those subprocesses rather than invoking the external binaries, so
+CI can run without Vina or Open Babel installed. The uncovered ranges are
+concentrated in pose parsing, PDBQT preparation, and the docking loop itself.
 
-## Uncovered Lines (Priority Gaps)
+## Superseded claims
 
-### `phase2_integration.py` (22 lines missed)
+| Claim | Where it appeared | Correct value |
+|---|---|---|
+| 40 tests | this file (2026-05-31 version) | 53 |
+| 79% coverage | manuscript §2.10 | 69% |
+| 88% of `phase2_integration.py` | manuscript §2.10 | 89% |
 
-| Lines | Function / context | Reason uncovered |
-|-------|-------------------|------------------|
-| 105, 109–114 | `PAINSFilter._get_catalog` | Catalog load failure path (requires broken RDKit install) |
-| 139–141 | `PAINSFilter.screen_molecule` | Exception during catalog match |
-| 241–242, 255–257 | `apply_pains_filter` | Sanitization fallbacks; PAINS-positive branch |
-| 263–269 | `apply_pains_filter` | Generic exception handler |
-| 376–377 | `run_phase2_pipeline` | Empty library early return |
-| 478 | `if __name__ == "__main__"` | Not executed via import |
+The README's figure of 53 tests was already correct.
 
-### `glycolibrary_generator.py` (64 lines missed)
-
-Primarily error-handling branches, logging file handler setup, export helpers (`export_library`, `export_failed_products`), and edge cases in product sanitization/deduplication. Core generation path is covered by integration and SMARTS tests.
-
-### `descriptor_calculator.py` (21 lines missed)
-
-CLI entry point (`main()`, `if __name__`) and exception handler in `validate_smiles`. Functional API is covered by existing unit tests.
-
----
-
-## Test Suite Breakdown
-
-| File | Tests | Markers | Focus |
-|------|-------|---------|-------|
-| `test_smarts_validation.py` | 12 | `unit` | SMARTS parsing, regioisomer labels, reaction execution |
-| `test_phase2_integration.py` | 11 | `unit`, `integration`, `slow` | Lipinski, PAINS, lead score, full workflow, pipeline smoke |
-| `test_smoke.py` | 6 | `unit`, `smoke` | Package API, CLI entry points |
-| `test_descriptor_calculator.py` | 6 | — | Phase 1 descriptors |
-| `test_library_generator.py` | 5 | — | Library generator basics |
-
-### Marker usage
+## Reproducing
 
 ```bash
-pytest -m unit          # 32 tests
-pytest -m integration   # 3 tests
-pytest -m smoke         # 3 tests
-pytest -m slow          # 1 test (run_phase2_pipeline_smoke)
-pytest -m "not slow"    # 39 tests (fast CI subset)
+pip install -e .
+pip install pytest pytest-cov
+pytest --cov=src --cov-report=term-missing
 ```
 
----
-
-## Coverage vs Audit Targets
-
-| Audit recommendation | Status |
-|---------------------|--------|
-| SMARTS validation tests | **Done** — 12 tests in `test_smarts_validation.py` |
-| Phase 2 integration tests | **Done** — 11 tests in `test_phase2_integration.py` |
-| PAINSFilter unit tests | **Done** — clean, undetermined, invalid SMILES |
-| `compute_lead_scores` tests | **Done** — formula, sorting, single-compound edge case |
-| End-to-end smoke test | **Done** — `test_run_phase2_pipeline_smoke` + CLI smoke |
-| `phase2_integration` >80% coverage | **Done** — 88% |
-
----
-
-## Recommended Next Steps (Priority 3+)
-
-1. Add test for PAINS-positive compound (mock catalog match) to cover lines 255–257.
-2. Add test for catalog load failure via monkeypatch on `FilterCatalog.FilterCatalog`.
-3. Add CLI test for `taloside-descriptors` / `descriptor_calculator.main()`.
-4. Cover `export_library` / `export_failed_products` helpers if CSV export via generator is part of public API.
-
----
-
-*Generated after Priority 2 test implementation.*
+CI runs the same suite on Python 3.10, 3.12 and 3.14 via
+`.github/workflows/tests.yml` (excluding tests marked `slow`).

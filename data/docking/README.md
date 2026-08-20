@@ -32,7 +32,13 @@ python -m taloside_pipeline.phase2_integration
 python -m taloside_pipeline.phase3_docking
 ```
 
-Default binding site (CRD): center (10, 15, 5) Å, box 20 Å. Outputs go to `phase3_output/`, including `08_docking_results.csv`.
+Binding site (CRD): set at runtime, not from the dataclass default.
+`validate_receptor()` overwrites the `DockingConfig` centre with the centroid of
+the 3ZSJ crystal ligand (BGC + GAL), giving **X = −20.98, Y = 8.88, Z = −1.00**
+with a 20 Å box at 0.375 Å spacing. The `(10, 15, 5)` value in `DockingConfig`
+is a placeholder that never reaches a docking run.
+
+Outputs go to `phase3_output/`, including `08_docking_results.csv`.
 
 For the clean rerun, the receptor PDBQT was regenerated with `scripts/clean_receptor_pdbqt.py`, and docking outputs were written to `phase3_output_clean/`.
 

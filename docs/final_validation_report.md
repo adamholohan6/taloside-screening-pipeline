@@ -1,166 +1,133 @@
-# Final Validation Report
+# Final validation report
 
-**Date:** 2026-05-31  
-**Scope:** Priority 1 + Priority 2 ChemRxiv readiness fixes  
-**Environment:** Windows 10, Python 3.14.5, RDKit ≥2022.09.1
+**Generated:** 2026-08-20 (v2.2.0 cleanup)
+**Environment:** Python 3.14.5, RDKit 2026.03.2, AutoDock Vina 1.2.7,
+Open Babel 3.1.1, BioPython 1.87, Windows (win32)
 
----
-
-## Executive Summary
-
-The taloside-screening-pipeline repository has completed Priority 1 (reproducibility alignment) and Priority 2 (test coverage) fixes. All **40 automated tests pass** with **79% overall code coverage**. The notebook, CLI, and integration module produce consistent Phase 2 outputs (16 compounds, 87.5% Lipinski pass rate, 14 PAINS-clean leads).
-
-**ChemRxiv readiness status:** Substantially improved — core pipeline is tested, documented, and reproducible. Remaining polish items (CI, CONTRIBUTING update, CITATION.cff) are Priority 3.
+Every figure below comes from a command run against this working tree on the
+date above. The previous version of this file was dated 2026-05-31 and described
+a pipeline that no longer exists. Claims that did **not** reproduce are recorded
+in [`UNVERIFIED.md`](../UNVERIFIED.md) rather than being quietly adjusted.
 
 ---
 
-## Priority 1 — Completed
+## 1. Environment and tooling
 
-| Item | Status | Evidence |
-|------|--------|----------|
-| Remove duplicate notebook | **Done** | `src/taloside_pipeline/Phase2_VirtualLibraryExpansion.ipynb` deleted |
-| README `pip install -e .` | **Done** | Installation section updated |
-| Document outputs 01–07 | **Done** | README output table complete |
-| Notebook aligned with pipeline | **Done** | Uses `generate_triazole_library`, `apply_*` from `phase2_integration` |
-| Notebook dependencies | **Done** | `matplotlib`, `seaborn`, `jupyter`, `ipykernel` in `requirements-dev.txt` |
-| Notebook executed with outputs | **Done** | See `notebook_execution_summary.md` |
+| Component | Required by | Detected | Verifies |
+|---|---|---|---|
+| Python | pipeline | 3.14.5 | — |
+| RDKit | Phases 1–3 | 2026.03.2 | pinned in `requirements.txt` |
+| AutoDock Vina | Phase 3 | **v1.2.7** | manuscript §2.7 claim |
+| Open Babel | Phase 3 | **3.1.1** | SI Note S1 claim |
+| BioPython | validation script | 1.87 | — |
 
----
+Vina and Open Babel are installed but not on `PATH`; both were invoked by
+absolute path. The Vina and Open Babel version claims were previously listed as
+unverified and are now confirmed.
 
-## Priority 2 — Completed
-
-| Item | Status | Evidence |
-|------|--------|----------|
-| SMARTS validation tests | **Done** | `tests/test_smarts_validation.py` (12 tests) |
-| Phase 2 integration tests | **Done** | `tests/test_phase2_integration.py` (11 tests) |
-| Smoke tests | **Done** | `tests/test_smoke.py` (6 tests) |
-| pytest run | **Done** | 40/40 passed |
-| pytest --cov | **Done** | 79% total; see `coverage_report.md` |
-
----
-
-## Test Execution Results
+## 2. Test suite
 
 ```
-Platform:   win32, Python 3.14.5, pytest 9.0.3
-Duration:   ~8–9 seconds
-Result:     40 passed, 0 failed, 0 skipped
-Coverage:   79% (502 statements, 107 missed)
+pytest --cov=src --cov-report=term-missing
+53 passed in 17.56s
+TOTAL  1023 stmts  314 miss  69%
 ```
 
-### Commands verified
+Full breakdown in [`coverage_report.md`](coverage_report.md).
 
-| Command | Result |
-|---------|--------|
-| `py -3.14 -m pytest` | 40 passed |
-| `py -3.14 -m pytest --cov=src --cov-report=term-missing` | 40 passed, 79% coverage |
-| `py -3.14 -m taloside_pipeline.phase2_integration` | Success (via smoke test) |
+## 3. Phase 2 — reproduced exactly
 
----
+`python -m taloside_pipeline.phase2_integration`
 
-## Pipeline Output Validation
+| Claim | Expected | Observed | |
+|---|---|---|---|
+| Compounds generated | 16 | 16 | ✅ |
+| — 1,4-CuAAC | 8 | 8 | ✅ |
+| — 1,5-RuAAC | 8 | 8 | ✅ |
+| Lipinski pass | 14 | 14 | ✅ |
+| Lipinski pass rate | 87.5% | 87.5% | ✅ |
+| Lipinski fail | 2 | 2 | ✅ |
+| PAINS flagged | 0 | 0 | ✅ |
+| PAINS undetermined | 0 | 0 | ✅ |
+| Lead score range | 0.399–0.905 | 0.399–0.905 | ✅ |
 
-Validated by `test_run_phase2_pipeline_smoke` and `test_full_phase2_workflow_components`:
+The regenerated `phase2_output/01..07*.csv` are **bit-identical** to the copies
+committed in this repository (`git status` reports no change after a clean
+rerun). Phase 2 is fully deterministic.
 
-| Metric | Expected | Observed |
-|--------|----------|----------|
-| Total compounds | 16 | 16 |
-| Regioisomers | 1,4-CuAAC + 1,5-RuAAC | 8 + 8 |
-| Lipinski passed | 14 (87.5%) | 14 |
-| Lipinski failed | 2 (2-nitro analogues) | 2 |
-| PAINS clean | 14 | 14 |
-| PAINS flagged | 0 | 0 |
-| PAINS undetermined | 0 | 0 |
-| CSV exports | 7 files | 7 files present |
+## 4. Docking validation — 57I pyranose ring
 
----
+`python scripts/validation/compute_57i_pyranose_rmsd.py` → **exit code 0**
 
-## Test Files Added / Modified
+| Quantity | Value |
+|---|---|
+| Cα atoms superposed (7RGX → 3ZSJ) | 138 |
+| Cα RMSD | 0.275 Å |
+| Pyranose RMSD, direct | 2.17 Å |
+| Pyranose RMSD, Kabsch-aligned | **0.48 Å** |
+| Manuscript §3.4 value | 0.48 Å ✅ |
 
-| File | Action |
-|------|--------|
-| `tests/test_smarts_validation.py` | **New** — SMARTS parsing, regioisomer validation |
-| `tests/test_phase2_integration.py` | **New** — Lipinski, PAINS, lead score, workflow |
-| `tests/test_smoke.py` | **New** — Package API and CLI smoke tests |
-| `tests/constants.py` | **New** — Shared scaffold, building blocks, column sets |
-| `tests/conftest.py` | **Updated** — Fixtures for Phase 2 config |
-| `tests/test_library_generator.py` | **Updated** — Uses `tmp_path` instead of `test_output/` |
-| `pytest.ini` | **Updated** — Added `smoke` marker |
+This check needs no AutoDock Vina: the redocked pose
+`data/docking/7RGX_57I_docked.pdbqt` is committed. Only the two RCSB structures
+must be fetched first (see `data/docking/README.md`).
 
----
+## 5. Grid centre — discrepancy found
 
-## Coverage Highlights
+The pipeline log records the centre it actually used:
 
-| Module | Coverage | Assessment |
-|--------|----------|------------|
-| `phase2_integration.py` | 88% | Critical path well covered |
-| `glycolibrary_generator.py` | 74% | Core generation covered; error branches remain |
-| `descriptor_calculator.py` | 67% | API covered; CLI untested |
-| `library_generator.py` | 100% | Re-export wrapper |
-| **Overall** | **79%** | Meets audit target for Phase 2 |
+```
+Dynamically centered grid on crystal ligand: X=-20.98, Y=8.88, Z=-1.00
+[grid] Docking grid centre: X=-20.982  Y=8.876  Z=-1.002  box=20.0 A^3
+```
 
-Prior audit baseline: 49% coverage, 11 tests, 12% on `phase2_integration.py`.
+The manuscript states X = −21.11, Y = 9.03, Z = −1.00 — a 0.196 Å offset caused
+by a duplicated `O1` record in the BGC residue of `3ZSJ.pdb`, which RDKit
+collapses on parse. See [`UNVERIFIED.md`](../UNVERIFIED.md) §1 for the full
+diagnosis and the evidence that the code's value is what produced the published
+results.
 
----
+The `(10, 15, 5)` figure formerly in `data/docking/README.md` was a
+`DockingConfig` dataclass placeholder, overwritten at runtime by
+`validate_receptor()`. Committed poses sit 33.6 Å from it, confirming it was
+never used.
 
-## Key Test Scenarios Covered
+## 6. Phase 3 docking — carried over, not re-verified
 
-### SMARTS validation
-- All five reaction templates parse in RDKit
-- CuAAC and RuAAC SMARTS are distinct from each other and from deprecated template
-- CuAAC reaction runs on taloside scaffold + phenyl alkyne
-- Invalid SMARTS rejected at generator init
+The published `phase3_output/08_docking_results.csv` (14 compounds, Vina scores
+−6.14 to −4.98 kcal/mol) is **carried over from the run of 2026-06-03**. It has
+not been regenerated, and this working tree leaves it untouched.
 
-### Phase 2 integration
-- Lipinski strict mode: 14 pass / 2 fail with carbohydrate-adjusted thresholds
-- Lead score: 0–1 range, descending sort, single-compound edge case
-- PAINS: clean ethanol; undetermined when catalog unavailable; invalid SMILES routed correctly
-- Full workflow component chain with CSV export
-- End-to-end `run_phase2_pipeline()` smoke in isolated temp directory
+What was established:
 
-### Smoke
-- Package import and `__all__` exports
-- `python -m taloside_pipeline.phase2_integration` subprocess
-- 16-compound library generation
-- 10-compound descriptor library
+| Check | Result |
+|---|---|
+| AutoDock Vina present and working | ✅ v1.2.7; a single-ligand docking completed at −5.817 kcal/mol |
+| Open Babel present | ✅ 3.1.1 |
+| All 14 ligand PDBQTs pass `validate_ligand_pdbqt()` | ✅ 14/14, rotor counts 9–10 |
+| Grid centre used at runtime | ✅ logged as X=−20.982 Y=8.876 Z=−1.002 |
+| Full 14-ligand re-run | ❌ not completed |
 
----
+The full re-run was attempted into a scratch directory (never overwriting the
+published table) but the long-running process was terminated by the execution
+environment before finishing, twice, leaving 12 of 14 compounds marked
+`dock_failed`. That partial output was **discarded rather than reported**: the
+failures are an artefact of the interrupted harness, not of the pipeline —
+ligand validation passes for all 14 and Vina docks them individually without
+error.
 
-## Remaining Gaps (Not in Scope)
+Phase 3 is also **not seeded**. Vina prints a fresh random seed each invocation
+(observed: `random seed: -1296807838`), so even a completed re-run could not
+bit-reproduce the published scores, only corroborate them statistically. See
+`UNVERIFIED.md` §5.
 
-These were identified in the original audit but deferred:
+## 7. Outstanding
 
-| Item | Priority |
-|------|----------|
-| GitHub Actions CI | 3 |
-| Update `CONTRIBUTING.md` | 3 |
-| `CITATION.cff` | 3 |
-| PAINS-positive compound test (mock) | 3 |
-| Descriptor CLI (`main()`) test | 3 |
-| Wire `data/input/taloside_descriptors.csv` into tests | 3 |
-| Windows Unicode logging arrows in `phase2_integration.py` | 3 (cosmetic) |
+Items that remain unverified or discrepant are enumerated in
+[`UNVERIFIED.md`](../UNVERIFIED.md):
 
----
-
-## Deliverables Index
-
-| Document | Description |
-|----------|-------------|
-| `audit_report.md` | Original ChemRxiv readiness audit |
-| `notebook_alignment_report.md` | Priority 1 notebook/README changes |
-| `notebook_execution_summary.md` | Priority 1 notebook execution log |
-| `coverage_report.md` | Priority 2 coverage analysis |
-| `final_validation_report.md` | This document |
-
----
-
-## Conclusion
-
-Priority 1 and Priority 2 fixes are **complete and validated**. The repository now has:
-
-- A single canonical, executed notebook aligned with the pipeline
-- Correct README installation (`pip install -e .`) and full output documentation
-- 40 passing tests covering SMARTS, Phase 2 integration, and smoke scenarios
-- 79% code coverage with 88% on the critical `phase2_integration` module
-
-The pipeline is ready for ChemRxiv supplementary material submission from a reproducibility standpoint, pending optional Priority 3 polish (CI, citation file, contributor docs).
+1. Grid centre disagreement (0.196 Å) between manuscript and code
+2. Manuscript §2.10 test/coverage figures are stale (40/79%/88% → 53/69%/89%)
+3. Manuscript RDKit attribution (2024.03.1 → 2026.03.x); 2024.03.1 itself
+   untestable on Python 3.14
+4. Lactose redocking RMSD (1.2 Å) is only bounded (< 2.0 Å), never persisted
+5. Phase 3 docking is unseeded and therefore not bit-reproducible
