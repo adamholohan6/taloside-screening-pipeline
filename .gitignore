@@ -25,7 +25,11 @@ htmlcov/
 run_diagnostic.py
 phase3_clean_run_summary.md
 phase3_output_clean/
-scripts/
+
+# scripts/ is scratch space, except the validation scripts that reproduce
+# the metrics reported in the manuscript
+scripts/*
+!scripts/validation/
 
 # Ignore generated plots (outputs belong in phase2_output/, not src/)
 *.png
