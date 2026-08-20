@@ -102,6 +102,19 @@ default is deliberately unseeded so that the published numbers remain the output
 of the pipeline's default configuration. The seed actually used is recorded in
 `phase3_docking.log` on the `[seed]` line.
 
+Verified on 2026-08-20 against Vina 1.2.7 using
+`SCAF-001_BB-001-Ph_CuAAC_1.pdbqt` at the section 6 grid centre, exhaustiveness
+8, two independent runs per condition:
+
+| Condition | Run A (kcal/mol) | Run B (kcal/mol) | Identical |
+|---|---|---|---|
+| `seed=42` | -5.602, -5.554, -5.292 | -5.602, -5.554, -5.292 | yes |
+| unseeded (default) | -5.895, -5.457, -5.142 | -5.919, -5.507, -5.153 | no |
+
+So seeding does deliver bit-reproducible scores, and the unseeded default does
+drift run to run -- here by up to 0.024 kcal/mol on the top pose, consistent
+with the 0.099 kcal/mol mean absolute difference in section 6.
+
 ## 6. Phase 3 re-run corroborates the published scores, but raw-Vina rank order is not stable
 
 The full 14-compound Phase 3 docking was re-run on 2026-08-20 (Vina 1.2.7,
