@@ -12,7 +12,7 @@ Workflow:
 Requires:
   - AutoDock Vina on PATH (or path set in DockingConfig.vina_executable)
   - Clean prepared receptor PDBQT (3ZSJ, no BGC/GAL/HOH) at paths given in DockingConfig
-  - RDKit >= 2022.09.1
+  - RDKit == 2026.03.2
 """
 
 from __future__ import annotations

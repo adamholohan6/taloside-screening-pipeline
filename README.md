@@ -2,10 +2,10 @@
 
 **Virtual library generation, drug-likeness filtering, PAINS screening, and AutoDock Vina docking for taloside-triazole derivatives against Galectin-3 (PDB: 3ZSJ).**
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
-[![RDKit](https://img.shields.io/badge/RDKit-2022.09.1+-green.svg)](https://rdkit.org)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://python.org)
+[![RDKit](https://img.shields.io/badge/RDKit-2026.03.2-green.svg)](https://rdkit.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![DOI](https://doi.org/10.5281/zenodo.20476421)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20476421.svg)](https://doi.org/10.5281/zenodo.20476421)
 
 ---
 
@@ -212,5 +212,9 @@ For questions or suggestions, please open an issue on GitHub.
 
 ## How to cite
 
-Holohan, A. (2026). Taloside Screening Pipeline (Version 2.0). Zenodo.
+Holohan, A. (2026). *Taloside Screening Pipeline* (Version 2.2.0). Zenodo.
 https://doi.org/10.5281/zenodo.20476421
+
+The DOI above is the **concept DOI**: it always resolves to the most recent
+release. To cite the exact archive you used, take the version-specific DOI
+from that release's Zenodo record instead.

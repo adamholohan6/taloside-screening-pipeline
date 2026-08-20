@@ -1,5 +1,6 @@
 """Smoke tests for package entry points and public API."""
 
+import re
 import subprocess
 import sys
 
@@ -12,7 +13,11 @@ from tests.constants import ROOT, SCAFFOLD, BUILDING_BLOCKS_PHASE2, LIBRARY_COLU
 def test_package_import_and_version():
     import taloside_pipeline
 
-    assert taloside_pipeline.__version__ == "1.0.0"
+    # Assert the shape of the version, not a literal: pinning the literal here
+    # means every release bump fails this test for no functional reason.
+    assert re.fullmatch(r"\d+\.\d+\.\d+", taloside_pipeline.__version__), (
+        f"unexpected version format: {taloside_pipeline.__version__!r}"
+    )
     assert hasattr(taloside_pipeline, "run_phase2_pipeline")
     assert hasattr(taloside_pipeline, "generate_triazole_library")
 

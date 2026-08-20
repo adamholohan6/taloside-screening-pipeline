@@ -26,7 +26,7 @@ CHANGELOG (reviewer-driven corrections):
 
 Author: Adam Holohan
 License: MIT
-Requires: RDKit >= 2022.09.1, Pandas >= 1.3.0
+Requires: RDKit == 2026.03.2, Pandas >= 1.3.0
 """
 
 import logging
