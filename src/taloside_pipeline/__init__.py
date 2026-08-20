@@ -4,7 +4,7 @@ Utilities for descriptor calculation, combinatorial taloside library generation,
 and the Phase 2 filtering workflow.
 """
 
-__version__ = "1.0.0"
+__version__ = "2.2.0"
 __author__ = "Adam Holohan"
 
 from .descriptor_calculator import (

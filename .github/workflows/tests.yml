@@ -1,0 +1,39 @@
+name: tests
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # RDKit 2026.03.2 publishes wheels for cp310-cp314 only.
+        python-version: ["3.10", "3.12", "3.14"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install package and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install pytest pytest-cov
+
+      # Phases 1 and 2 are pure RDKit and run fully here. Phase 3 tests that
+      # need the Open Babel binary, or the receptor structures under
+      # data/docking/ (not tracked), skip themselves via the guards in
+      # tests/test_phase3_docking.py. Vina itself is never invoked: the one
+      # docking test mocks the subprocess.
+      - name: Run test suite
+        run: pytest -m "not slow" --cov=src --cov-report=term-missing -rs

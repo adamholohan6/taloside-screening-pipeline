@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -10,7 +11,9 @@ def run_phase(module_name: str) -> None:
     repo_root = Path(__file__).resolve().parent
     src_path = str(repo_root / "src")
 
-    env = {}
+    # Inherit the caller's environment: Phase 3 resolves `vina` and `obabel`
+    # from PATH, so starting from an empty dict breaks docking.
+    env = os.environ.copy()
     env["PYTHONPATH"] = src_path
 
     subprocess.run(

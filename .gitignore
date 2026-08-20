@@ -1,38 +1,65 @@
-# Ignore docking data and results
-data/
-phase3_output/
+# ---------------------------------------------------------------------------
+# Bulk docking data and pipeline outputs are excluded, but the result tables
+# that back the reported numbers are tracked. A negation cannot re-include a
+# file whose parent directory is excluded, so directories are excluded with
+# `dir/*` rather than `dir/` to let git descend into them.
+# ---------------------------------------------------------------------------
+
+# Docking inputs: large structures stay out. The redocked 57I pose is the one
+# committed artefact that lets the pyranose-ring RMSD be checked without Vina.
+data/*
+!data/docking/
+data/docking/*
+!data/docking/README.md
+!data/docking/7RGX_57I_docked.pdbqt
+!data/input/
+data/input/*
+!data/input/*.csv
+
+# Phase 2 outputs: result tables and their plots are both tracked.
+
+# Phase 3 outputs: keep the headline results table, drop poses and ligands.
+phase3_output/*
+!phase3_output/08_docking_results.csv
+
+phase3_output_clean/
 *.pdbqt
-*.csv
+!data/docking/7RGX_57I_docked.pdbqt
 *.log
 
-# Ignore Python/IDE files
+# Python / IDE
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
 .vscode/
 .idea/
 
-# Ignore tool/editor state
+# Tool and editor state
 .continue/
 .coverage
+coverage.json
 htmlcov/
+.pytest_cache/
 
-# Ignore stale backup and scratch files
+# Stale backups and scratch
 *_FIXED.py
 *_FIXED_copy.py
 *_new.py
 *.bak
 run_diagnostic.py
 phase3_clean_run_summary.md
-phase3_output_clean/
 
-# scripts/ is scratch space, except the validation scripts that reproduce
-# the metrics reported in the manuscript
+# scripts/ is scratch space, except the validation scripts that reproduce the
+# metrics reported in the manuscript and the receptor-preparation helper
+# referenced from data/docking/README.md.
 scripts/*
 !scripts/validation/
+!scripts/clean_receptor_pdbqt.py
 
-# Ignore generated plots (outputs belong in phase2_output/, not src/)
-*.png
+# Generated plots (outputs belong in phase2_output/, not src/)
+src/**/*.png
 
-# Ignore package build artefacts
+# Package build artefacts
 *.egg-info/
+build/
+dist/

@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+title: Taloside Screening Pipeline
+message: >-
+  If you use this software, please cite it using the metadata from this file.
+type: software
+authors:
+  - given-names: Adam
+    family-names: Holohan
+    email: adamholohan6@gmail.com
+    affiliation: National University of Ireland, Galway
+repository-code: https://github.com/adamholohan6/taloside-screening-pipeline
+abstract: >-
+  Virtual library generation, drug-likeness filtering, PAINS screening, and
+  AutoDock Vina docking for taloside-triazole derivatives against Galectin-3
+  (PDB 3ZSJ). Enumerates CuAAC 1,4- and RuAAC 1,5-triazole regioisomers,
+  applies carbohydrate-adjusted Lipinski and PAINS filters, ranks candidates
+  with a composite lead score, and docks the survivors against the Galectin-3
+  carbohydrate-recognition domain.
+keywords:
+  - cheminformatics
+  - rdkit
+  - autodock-vina
+  - molecular-docking
+  - galectin-3
+  - virtual-screening
+  - click-chemistry
+license: MIT
+version: 2.2.0
+# Concept DOI: always resolves to the most recent release. For the exact
+# archive used, substitute that release's version-specific DOI.
+doi: 10.5281/zenodo.20476421

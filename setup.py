@@ -1,15 +1,25 @@
 #!/usr/bin/env python
 """Setup configuration for taloside-screening-pipeline package."""
 
+import re
+
 from setuptools import setup, find_packages
 from pathlib import Path
 
 # Read long description from README
 long_description = Path("README.md").read_text(encoding="utf-8")
 
+# Single source of truth for the version: src/taloside_pipeline/__init__.py.
+# Parsed rather than imported so that building does not require rdkit.
+_init = Path("src/taloside_pipeline/__init__.py").read_text(encoding="utf-8")
+_match = re.search(r"^__version__ = ['\"]([^'\"]+)['\"]", _init, re.M)
+if _match is None:
+    raise RuntimeError("Cannot find __version__ in src/taloside_pipeline/__init__.py")
+version = _match.group(1)
+
 setup(
     name="taloside-screening-pipeline",
-    version="1.0.0",
+    version=version,
     author="Adam Holohan",
     author_email="adamholohan6@gmail.com",
     description="Taloside virtual library generation, drug-likeness filtering, and PAINS screening pipeline",
@@ -30,11 +40,12 @@ setup(
             "taloside-phase3=taloside_pipeline.phase3_docking:run_phase3_pipeline",
         ],
     },
-    python_requires=">=3.8",
+    python_requires=">=3.10",
     install_requires=[
-        "rdkit>=2022.09.1",
+        "rdkit==2026.03.2",
         "pandas>=1.3.0",
         "numpy>=1.19.0",
+        "biopython>=1.80",
     ],
     extras_require={
         "dev": [
@@ -54,10 +65,11 @@ setup(
         "Topic :: Scientific/Engineering :: Chemistry",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
     ],
     keywords="chemistry rdkit cheminformatics drug-discovery admet descriptors",
 )

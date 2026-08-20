@@ -26,7 +26,7 @@ CHANGELOG (reviewer-driven corrections):
 
 Author: Adam Holohan
 License: MIT
-Requires: RDKit >= 2022.09.1, Pandas >= 1.3.0
+Requires: RDKit == 2026.03.2, Pandas >= 1.3.0
 """
 
 import logging
@@ -63,6 +63,20 @@ def configure_logging(log_file: Optional[Path] = None) -> logging.Logger:
     if logger.handlers:
         return logger  # avoid duplicate handlers on reimport
 
+    # The pipeline logs arrow and box-drawing characters. On Windows the
+    # console defaults to cp1252, which cannot encode them, and logging then
+    # raises UnicodeEncodeError for every such record. Prefer UTF-8, and fall
+    # back to replacing unencodable characters rather than failing.
+    for kwargs in ({"encoding": "utf-8"}, {"errors": "replace"}):
+        reconfigure = getattr(sys.stdout, "reconfigure", None)
+        if reconfigure is None:
+            break
+        try:
+            reconfigure(**kwargs)
+            break
+        except (ValueError, OSError, LookupError):
+            continue
+
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(
@@ -71,7 +85,8 @@ def configure_logging(log_file: Optional[Path] = None) -> logging.Logger:
     logger.addHandler(console_handler)
 
     if log_file:
-        file_handler = logging.FileHandler(log_file)
+        # Without an explicit encoding this also defaults to the locale codec.
+        file_handler = logging.FileHandler(log_file, encoding="utf-8")
         file_handler.setLevel(logging.DEBUG)
         file_handler.setFormatter(
             logging.Formatter(
