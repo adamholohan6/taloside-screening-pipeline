@@ -271,3 +271,26 @@ def test_validate_receptor_asserts_high_rmsd(docking_config):
                         ):
                             with pytest.raises(AssertionError, match="RMSD"):
                                 docker.validate_receptor()
+
+
+def test_vina_command_omits_seed_by_default(docking_config, tmp_path):
+    """Default config reproduces the unseeded command that produced the published table."""
+    docker = VinaDocking(docking_config)
+    command = docker._build_vina_command(tmp_path / "lig.pdbqt", tmp_path / "out.pdbqt")
+    assert "--seed" not in command
+
+
+def test_vina_command_includes_seed_when_configured(docking_config, tmp_path):
+    """Setting seed makes docking deterministic; see UNVERIFIED.md section 5."""
+    docking_config.seed = 42
+    docker = VinaDocking(docking_config)
+    command = docker._build_vina_command(tmp_path / "lig.pdbqt", tmp_path / "out.pdbqt")
+    assert command[command.index("--seed") + 1] == "42"
+
+
+def test_vina_command_accepts_seed_zero(docking_config, tmp_path):
+    """seed=0 is a valid seed, not a falsy 'unset' sentinel."""
+    docking_config.seed = 0
+    docker = VinaDocking(docking_config)
+    command = docker._build_vina_command(tmp_path / "lig.pdbqt", tmp_path / "out.pdbqt")
+    assert command[command.index("--seed") + 1] == "0"

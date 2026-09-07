@@ -88,6 +88,10 @@ class DockingConfig:
     box_size: float = 20.0
     exhaustiveness: int = 8
     n_poses: int = 3
+    # Vina's Monte Carlo search is unseeded by default, matching the behaviour
+    # that produced the published 08_docking_results.csv. Set an integer to pass
+    # --seed and make docking deterministic; see UNVERIFIED.md section 5.
+    seed: Optional[int] = None
     output_dir: Path = field(default_factory=lambda: Path("phase3_output_clean"))
     vina_executable: str = "vina"
     lead_csv: Path = field(
@@ -577,7 +581,7 @@ class VinaDocking:
         return out
 
     def _build_vina_command(self, ligand_pdbqt: Path, output_pdbqt: Path) -> List[str]:
-        return [
+        command = [
             self.config.vina_executable,
             "--receptor",
             str(self.config.receptor_pdbqt),
@@ -602,6 +606,9 @@ class VinaDocking:
             "--out",
             str(output_pdbqt),
         ]
+        if self.config.seed is not None:
+            command += ["--seed", str(self.config.seed)]
+        return command
 
     def run_docking(self, prepared_df: pd.DataFrame) -> pd.DataFrame:
         if not self.config.receptor_pdbqt.exists():
@@ -809,6 +816,14 @@ STDERR:
                 raise AssertionError("Could not parse docked lactose pose for RMSD")
             rmsd = align_and_rmsd(crystal_mol, docked_mol)
 
+        # Record the measured value, not just pass/fail. Under an unseeded Vina
+        # this RMSD is a per-run sample (UNVERIFIED.md section 7), so a run that
+        # only reports "passed" hides how close to the threshold it landed.
+        self.logger.info(
+            f"[validate] Lactose redock RMSD: {rmsd:.3f} A "
+            f"(threshold {self.config.rmsd_threshold_angstrom:.1f} A)"
+        )
+
         if rmsd >= self.config.rmsd_threshold_angstrom:
             raise AssertionError(
                 f"Receptor validation failed: lactose redock RMSD {rmsd:.3f} A >= {self.config.rmsd_threshold_angstrom:.1f} A threshold"
@@ -858,6 +873,10 @@ def run_phase3_pipeline(config: Optional[DockingConfig] = None, validate: bool =
         f"[grid] Docking grid centre: "
         f"X={config.center_x:.3f}  Y={config.center_y:.3f}  Z={config.center_z:.3f}  "
         f"box={config.box_size:.1f} A^3"
+    )
+    logger.info(
+        f"[seed] Vina seed: "
+        f"{config.seed if config.seed is not None else 'unseeded (non-deterministic)'}"
     )
 
     prepared = docker.prepare_ligands(leads)
