@@ -184,6 +184,28 @@ require Open Babel to be on PATH.
 
 ---
 
+## AI assistance
+
+Parts of this repository were developed with AI assistance. Claude (Anthropic),
+used through Claude Code, contributed between June and August 2026; 22 of the 35
+commits reachable from `master` carry a `Co-Authored-By: Claude` trailer. That
+work covered the Phase 3 docking module, its tests, validation scripts,
+documentation, figure generation, and manuscript revision notes.
+
+The Phase 1 and Phase 2 core development predates this and was not AI-assisted.
+It sits on the older `main` branch, which is a separate lineage and not an
+ancestor of `master`.
+
+Substantial portions of the AI-assisted code and documentation were **not
+independently audited at the time they were written**. A review is underway; see
+[`UNVERIFIED.md`](UNVERIFIED.md) §9 for its scope, and §5–§8 for findings to
+date, including a validation defect identified in August 2026.
+
+Responsibility for the content of this repository, AI-assisted or otherwise,
+rests with the author.
+
+---
+
 ## References
 
 - Lipinski, C. A. et al. (1997). *Adv. Drug Deliv. Rev.* — Rule of 5

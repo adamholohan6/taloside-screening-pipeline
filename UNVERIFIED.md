@@ -258,3 +258,70 @@ author's decision. But the claim the number is used to support -- that docking
 reproduces the crystallographic lactose pose, and that the grid and receptor
 preparation are therefore validated -- is not supported by the current
 measurement, and this should be resolved before submission.
+
+---
+
+## 9. AI assistance, and what has and has not been audited
+
+### Scope
+
+Claude (Anthropic), used through Claude Code, contributed to this repository
+between 3 June and 20 August 2026. Models used were Claude Opus 5, Claude
+Sonnet 4.6, and Claude Haiku 4.5.
+
+Twenty-two of the thirty-five commits reachable from `master` carry a
+`Co-Authored-By: Claude` trailer (22 of 56 across all branches). All twenty-two
+sit on the `master` lineage. The original Phase 1 and Phase 2 development, on
+the `main` branch of 30-31 May 2026 -- a separate lineage that is not an
+ancestor of `master` -- carries none.
+
+By files touched, that work concentrated on:
+
+| Area | File-touches |
+|---|---|
+| `src/` | 32 |
+| `docs/` | 14 |
+| `figures/` | 11 |
+| `phase2_output/`, `manuscript/`, this file | 7 each |
+| `tests/` | 6 |
+| `scripts/` | 4 |
+
+The most frequently modified individual files were `UNVERIFIED.md` (7),
+`src/taloside_pipeline/phase3_docking.py` (5), `.gitignore` (5),
+`requirements.txt` (4), `tests/test_phase3_docking.py` (3),
+`src/taloside_pipeline/glycolibrary_generator.py` (3), and
+`scripts/validation/compute_57i_pyranose_rmsd.py` (3).
+
+### What this means for a reader
+
+Substantial portions of the AI-assisted code, documentation and analysis were
+**not independently audited at the time they were written**. Commit messages and
+in-repository reports written during that period describe intent and results,
+but do not constitute independent verification by the author.
+
+This is not a hypothetical concern. The two files most directly implicated in
+the validation defect recorded in §7 and §8 --
+`src/taloside_pipeline/phase3_docking.py` and
+`scripts/validation/compute_57i_pyranose_rmsd.py` -- are both among the
+most-modified in this set.
+
+The defect was also not caught by the review documents in this repository.
+`UNVERIFIED.md`, `docs/audit_report.md`, `docs/final_validation_report.md` and
+`manuscript/REVISION_NOTES.md` were each **created in AI-assisted commits dated
+20 August 2026**. They are AI-generated review documents, not independent
+verification by the author, and should be read as such -- including this
+section.
+
+### Status of the review
+
+A review is underway. It is not complete, and no claim of comprehensive
+verification is made here.
+
+Verified to date by direct measurement, and recorded in §5-§8 of this document:
+the seeding behaviour of Phase 3 docking; the run-to-run variance of the lactose
+validation RMSD; the in-place placement of the docked lactose pose; and the
+distinction between the aligned and direct 57I pyranose RMSD values.
+
+Not yet verified: the remainder of the Phase 3 module, the figure-generation
+code, the reports under `docs/`, and the numerical claims in the manuscript that
+are not already itemised in this file.
